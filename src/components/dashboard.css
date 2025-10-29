@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+/* ============================
+   VARIABLES GLOBALES
+============================ */
+:root {
+  --green-1: #0b6b3a;
+  --green-2: #20b573;
+  --shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ============================
+   BASE
+============================ */
+* {
+  box-sizing: border-box;
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body,
+html,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;
+  background: linear-gradient(180deg, var(--green-2), var(--green-1));
+  color: #222;
+  overflow-x: hidden; /* evita scroll lateral */
+  
+
+}
+
+/* ============================
+   LAYOUT PRINCIPAL
+============================ */
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  background: transparent;
+}
+
+/* ============================
+   SIDEBAR ANIMADA
+============================ */
+.sidebar {
+  width: 240px;
+  background: #151515;
+  color: #fff;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: width 0.4s ease, padding 0.3s ease;
+  box-shadow: 6px 0 20px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Estado colapsado */
+.sidebar.collapsed {
+  width: 70px;
+  padding: 20px 0;
+  align-items: center;
+}
+
+/* Encabezado normal */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+/* Oculta la marca cuando está colapsada */
+.sidebar.collapsed .brand {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Header colapsado */
+.collapsed-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+  padding: 18px 0;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+.sidebar:not(.collapsed) .collapsed-header {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Texto vertical “Menú” */
+.collapsed-header span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: #9fe3a9;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* Ícono del menú */
+.collapsed-header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9fe3a9;
+  padding: 6px;
+  transition: transform 0.2s ease, background 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.collapsed-header button:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+/* ============================
+   CONTENIDO PRINCIPAL
+============================ */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+/* ============================
+   RESPONSIVE AJUSTADO
+============================ */
+
+/* Móviles (<768px): sin sidebar */
+@media (max-width: 767px) {
+  .sidebar {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+    z-index: -1 !important;
+  }
+
+  .dashboard {
+    flex-direction: column;
+  }
+
+  .main-wrapper {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* Tablets (768px–1023px): sidebar visible y animada */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .dashboard {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    width: 240px;
+    height: 100vh;
+  }
+
+  .main-wrapper {
+    flex: 1;
+    width: calc(100% - 240px);
+  }
+}
+
+/* Escritorio (≥1024px) */
+@media (min-width: 1024px) {
+  .dashboard {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    width: 240px;
+  }
+
+  .main-wrapper {
+    width: calc(100% - 240px);
+  }
+}
