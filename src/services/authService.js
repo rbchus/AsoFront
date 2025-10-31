@@ -39,8 +39,8 @@ export const forgotPassword = async (correo) => {
  * Endpoint: POST /api/usuarios/edit-password
  * Body: { newPass }
  */
-export const changePassword = async (newPass) => {
-  const res = await apiClient.post("/usuarios/edit-password", { newPass });
+export const changePassword = async (payload) => {
+  const res = await apiClient.post("/usuarios/edit-password", payload);
   return res.data;
 };
 

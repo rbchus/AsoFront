@@ -2,12 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const menuItems = [
-  { path: "/dashboard", label: "Inicio" },
-  { path: "/dashboard/tramites", label: "Trámites" },
-  { path: "/dashboard/tramites/nuevo", label: "Nuevo Trámite" },
-  // { path: "/dashboard/reportes", label: "Reportes" },
-];
+// const menuItems = [
+//   { path: "/dashboard", label: "Inicio" },
+//   { path: "/dashboard/tramites", label: "Trámites" },
+//   { path: "/dashboard/tramites/nuevo", label: "Nuevo Trámite" },
+//   // { path: "/dashboard/reportes", label: "Reportes" },
+// ];
 
 export default function MenuList({ onItemClick }) {
   const { usuario } = useAuth();
@@ -16,14 +16,18 @@ export default function MenuList({ onItemClick }) {
     usuario?.rol === "CIUDADANO"
       ? [
           { path: "/dashboard", label: "Inicio" },
+          { path: "/dashboard/perfil", label: "Mi Perfil" },
           { path: "/dashboard/tramites", label: "Mis Trámites" },
           { path: "/dashboard/tramites/nuevo", label: "Nuevo Trámite" },
         ]
       : [
           { path: "/dashboard", label: "Inicio" },
+          { path: "/dashboard/perfil", label: "Mi Perfil" },
           { path: "/dashboard/tramites", label: "Trámites" },
           { path: "/dashboard/tramites/nuevo", label: "Nuevo Trámite" },
-          // { path: "/dashboard/reportes", label: "Reportes" },
+          { path: "/dashboard/admin/usuarios", label: "Usuarios" },
+          { path: "/dashboard/admin/usuarios/create", label: "Crear usuarios" },
+          
         ];
         
   return (

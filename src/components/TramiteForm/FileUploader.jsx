@@ -1,13 +1,50 @@
 import { useState } from "react";
-import { FilePlus2, ChevronUp, ChevronDown } from "lucide-react";
+import { FilePlus2, ChevronUp, ChevronDown , Trash2} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function FileUploader({ archivos, setArchivos }) {
+  const { usuario } = useAuth();
   const [files, setFiles] = useState([]);
   const [isOpen, setIsOpen] = useState(true);
 
+  
+  //const handleFileChange = (e) => {
+  //  const nuevos = Array.from(e.target.files);
+   // setArchivos([...archivos, ...nuevos]);
+  //};
+
+   const limpiarNombreArchivo = (nombre) => {
+  // Separa el nombre y la extensión
+  const partes = nombre.split(".");
+  const extension = partes.pop(); // última parte: pdf, png, etc.
+  const base = partes.join("_"); // une el resto sin puntos
+
+  const limpio = base
+    .normalize("NFD") // separa tildes
+    .replace(/[\u0300-\u036f]/g, "") // elimina acentos
+    .replace(/[^a-zA-Z0-9_-]/g, "_") // permite solo letras, números, guion y guion bajo
+    .replace(/_+/g, "_") // evita guiones bajos repetidos
+    .trim();
+
+  return `${limpio}.${extension}`;
+};
+
   const handleFileChange = (e) => {
-    const nuevos = Array.from(e.target.files);
-    setArchivos([...archivos, ...nuevos]);
+    if (!e.target.files) return;
+
+    const nuevosArchivos = Array.from(e.target.files).map((file) => {
+      const nombreLimpio = limpiarNombreArchivo(file.name);
+      // 🔹 Crear un nuevo File con el nombre limpio
+      return new File([file], `${usuario?.rol}_${nombreLimpio}`, { type: file.type });
+    });
+
+    //setArchivos([...archivos, ...nuevosArchivos]);
+    setArchivos((prev) => [...prev, ...nuevosArchivos]);
+  };
+
+  // 🗑️ Eliminar un archivo por índice
+  const eliminarArchivo = (index) => {
+    setArchivos((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -64,13 +101,45 @@ export default function FileUploader({ archivos, setArchivos }) {
             />
           </label>
 
-          {archivos.length > 0 && (
+         {/*  {archivos.length > 0 && (
             <ul className="mt-3 space-y-1 text-sm text-gray-600">
               {archivos.map((a, i) => (
                 <li key={i}>📄 {a.name}</li>
               ))}
             </ul>
-          )}
+          )} */}
+
+ {/* ✅ Lista de archivos */}
+      {archivos.length > 0 && (
+        <ul className="mt-3 space-y-2 text-sm text-gray-700">
+          {archivos.map((a, i) => (
+            <li
+              key={i}
+              className="flex items-center justify-between bg-white border border-gray-200 p-2 rounded-lg shadow-sm hover:bg-gray-100 transition"
+            >
+              {/* Nombre del archivo */}
+              <div className="flex items-center space-x-2">
+                {a.type.includes("image") ? (
+                  <span className="text-blue-500">🖼️</span>
+                ) : (
+                  <span className="text-blue-600">📄</span>
+                )}
+                <span className="truncate max-w-xs">{a.name}</span>
+              </div>
+
+              {/* Botón de eliminar */}
+              <button
+                onClick={() => eliminarArchivo(i)}
+                className="text-red-500 hover:text-red-700 transition"
+                title="Eliminar archivo"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
         </div>
       )}
     </div>

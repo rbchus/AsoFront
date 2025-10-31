@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error("Error login:", err);
       setLoading(false);
-      return { success: false, message: "❌ Usuario o contraseña incorrectos" };
+      return { success: false, message: "❌   Usuario o contraseña incorrectos" };
     }
   };
 

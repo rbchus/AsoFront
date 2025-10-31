@@ -7,12 +7,10 @@ import DashboardPage from "./pages/DashboardPage";
 import TramiteFormPage from "./pages/TramiteFormPage";
 import TramiteListPage from "./pages/TramiteListPage";
 import UsuariosListPage from "./pages/UsuariosListPage";
-import PerfilUsuario from "./pages/perfilUsuario";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import RegisterAdminPage from "./pages/RegisterAdminPage"
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import { useDocumentTitle } from "./hooks/useDocumentTitle";
@@ -37,9 +35,9 @@ function App() {
         element={<Navigate to="/forgot-password" replace />}
       />
 
-      {/* Dashboard con layout y rutas hijas */}
+      {/* Dashboard con layout */}
       <Route
-        path="/dashboard/*" // <-- Muy importante el *
+        path="/dashboard/*"
         element={
           <ProtectedRoute>
             <DashboardLayout />
@@ -48,11 +46,10 @@ function App() {
       >
         {/* Páginas hijas */}
         <Route index element={<DashboardPage />} />
-        <Route path="perfil" element={<PerfilUsuario />} />
         <Route path="tramites" element={<TramiteListPage />} />
         <Route path="tramites/nuevo" element={<TramiteFormPage />} />
 
-        {/* Usuarios solo para ADMIN */}
+        {/* Usuarios (solo ADMIN) */}
         <Route
           path="admin/usuarios"
           element={
@@ -61,23 +58,11 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-        path="admin/usuarios/create"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN", "ADMINISTRADOR"]}>
-            <RegisterAdminPage />
-          </ProtectedRoute>
-        }
-      />
       </Route>
 
-      
- 
-      
-
-      {/* Catch-all */ }
-  <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes >
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }
 
