@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { getGestores } from "../services/tramitesService";
-import { actualizarEstadoTramite } from "../services/tramitesService";
+import {
+  actualizarEstadoTramite,
+  insertarDocumentosTramite,
+} from "../services/tramitesService";
+import { uploadTramiteFiles } from "../services/tramitesService";
+import FileUploader from "../components/TramiteForm/FileUploader";
 
 export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
   const { usuario } = useAuth();
@@ -42,34 +47,90 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
     setArchivos(Array.from(e.target.files));
   };
 
-  const handleActualizar = async () => {
-    try {
-      setSaving(true);
-
-      const payload = {
-        estado: nuevoEstado,
-        gestorAsignadoId: parseInt(nuevoGestor),
-        observacion,
-        usuarioLogueado: {
-          id: usuario?.id,
-          nombre: usuario?.nombre,
-          correo: usuario?.correo,
-          rol: usuario?.rol,
-        },
-      };
-
-      console.log("✅ Actualización:", tramite.id, payload);
-      const res = await actualizarEstadoTramite(tramite.id, payload);
-      console.log("✅ Actualización:", res.data);
-
-      if (onUpdated) onUpdated();
-      onClose();
-    } catch (err) {
-      console.error("❌ Error actualizando trámite:", err);
-    } finally {
-      setSaving(false);
-    }
+  const obtenerTipoCorto = (mimeType) => {
+    if (!mimeType) return "OTRO";
+    if (mimeType.includes("pdf")) return "PDF";
+    if (mimeType.includes("image")) return "IMG";
+    if (mimeType.includes("word")) return "DOCX";
+    if (mimeType.includes("excel")) return "XLSX";
+    if (mimeType.includes("text")) return "TXT";
+    if (mimeType.includes("zip")) return "ZIP";
+    return mimeType.split("/")[1]?.substring(0, 10).toUpperCase() || "OTRO";
   };
+
+  const handleActualizar = async () => {
+  try {
+    setSaving(true);
+
+    const payload = {
+      estado: nuevoEstado,
+      gestorAsignadoId: parseInt(nuevoGestor),
+      observacion,
+      usuarioLogueado: {
+        id: usuario?.id,
+        nombre: usuario?.nombre,
+        correo: usuario?.correo,
+        rol: usuario?.rol,
+      },
+    };
+
+    const documentos = archivos.map((a) => ({
+      nombre_archivo: a.name,
+      ruta: URL.createObjectURL(a),
+      tipo: obtenerTipoCorto(a.type),
+    }));
+
+    console.log("✅ Documentos a enviar:", documentos);
+    console.log("✅ Actualización:", tramite.id, payload);
+
+    // ⚙️ Verificar si la observación está vacía antes de guardar
+    let observacionFinal = observacion?.trim() || "";
+
+    if (!observacionFinal) {
+      if (archivos.length > 0) {
+        observacionFinal = "Se agregaron documentos al trámite.";
+      } else if (nuevoGestor && nuevoGestor !== tramite.gestorAsignado?.id_usuario) {
+        const gestorSeleccionado = gestores.find((g) => g.id_usuario === parseInt(nuevoGestor));
+        observacionFinal = `Se asignó el gestor ${gestorSeleccionado?.nombre || ""}.`;
+      } else if (nuevoEstado && nuevoEstado !== tramite.estado) {
+        observacionFinal = `Se cambió el estado del trámite a ${nuevoEstado}.`;
+      }
+    }
+
+    // Guardar actualización de estado
+    const res = await actualizarEstadoTramite(tramite.id, {
+      ...payload,
+      observacion: observacionFinal,
+    });
+
+    // 🧾 Insertar documentos si existen
+    if (documentos && documentos.length > 0) {
+      const resDoc = await insertarDocumentosTramite(tramite.id, documentos, observacionFinal);
+      console.log("✅ Documentos agregados:", resDoc.data);
+    } else {
+      console.log("⚠️ No hay documentos para agregar.");
+    }
+
+    // 📤 Subida de archivos reales al backend
+    if (archivos && archivos.length > 0) {
+      const uploadResponse = await uploadTramiteFiles(tramite.codigoAso, archivos);
+      console.log("✅ uploadResponse", uploadResponse);
+    } else {
+      console.log("⚠️ No hay archivos para subir.");
+    }
+
+    console.log("✅ Actualización completa:", res.data);
+
+    if (onUpdated) onUpdated();
+    onClose();
+  } catch (err) {
+    console.error("❌ Error actualizando trámite:", err);
+  } finally {
+    setSaving(false);
+  }
+};
+
+  
 
   return (
     <motion.div
@@ -87,7 +148,7 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
       >
         <div className="flex justify-between items-center mb-4 border-b pb-2">
           <h3 className="text-xl font-semibold text-gray-800">
-            ✏️ Editar Estado del Trámite #{tramite.id}
+            ✏️ Editar Trámite #{tramite.id}
           </h3>
           <button
             onClick={onClose}
@@ -155,7 +216,12 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
               </p>
             </div>
 
-            <div>
+            <div className="mt-8 border-t pt-6 animate-fadeIn">
+              {/* Archivos */}
+              <FileUploader archivos={archivos} setArchivos={setArchivos} />
+            </div>
+
+            {/*    <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 Adjuntar archivos
               </label>
@@ -171,7 +237,7 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
                   {archivos.length} archivo(s) seleccionado(s)
                 </p>
               )}
-            </div>
+            </div> */}
 
             <div className="flex justify-center gap-4 mt-6">
               <button

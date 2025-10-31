@@ -3,22 +3,24 @@ import { getTramitesRelacion } from "../../services/tramitesRelacionService";
 import FileUploader from "./FileUploader";
 import InmuebleForm from "./InmuebleForm";
 import TitularForm from "./TitularForm";
-import MessageCard from "../../pages/MessageCard"
+import MessageCard from "../../pages/MessageCard";
 
 import SelectSolicitanteTipo from "./SelectSolicitanteTipo";
 
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 
-import { createTramite } from "../../services/tramitesService";
+import {
+  createTramite,
+  uploadTramiteFiles,
+} from "../../services/tramitesService";
 
 import { useAuth } from "../../context/AuthContext";
 
 export default function TramiteSelector() {
+  const { usuario } = useAuth();
 
-   const { usuario } = useAuth();
-
-   const [archivos, setArchivos] = useState([]);
+  const [archivos, setArchivos] = useState([]);
   const [tramites, setTramites] = useState([]);
   const [tipoTramite, setTipoTramite] = useState("");
   const [subTramite, setSubTramite] = useState("");
@@ -26,8 +28,10 @@ export default function TramiteSelector() {
   const [solicitanteTipo, setSolicitanteTipo] = useState(null);
   const [titulares, setTitulares] = useState([]);
   const [razon, setRazon] = useState("");
- const [inmueble, setInmueble] = useState([]);
+  const [inmueble, setInmueble] = useState([]);
   const [rtaBack, setRtaBack] = useState(null);
+  const [cargando, setCargando] = useState(false);
+
   const maxLength = 250;
 
   useEffect(() => {
@@ -76,13 +80,12 @@ export default function TramiteSelector() {
     relacionId,
     solicitanteTipo,
     titulares,
-    inmueble
+    inmueble,
   ]);
-
 
   //.........................
 
-// ✅ Validar campos mínimos para activar botón
+  // ✅ Validar campos mínimos para activar botón
   const camposMinimos = [
     tipoTramite,
     subTramite,
@@ -98,8 +101,20 @@ export default function TramiteSelector() {
 
   const puedeEnviar = camposMinimos.every(Boolean);
 
+  const obtenerTipoCorto = (mimeType) => {
+    if (!mimeType) return "OTRO";
+    if (mimeType.includes("pdf")) return "PDF";
+    if (mimeType.includes("image")) return "IMG";
+    if (mimeType.includes("word")) return "DOCX";
+    if (mimeType.includes("excel")) return "XLSX";
+    if (mimeType.includes("text")) return "TXT";
+    if (mimeType.includes("zip")) return "ZIP";
+    return mimeType.split("/")[1]?.substring(0, 10).toUpperCase() || "OTRO";
+  };
+
   // 🧱 Construir el JSON final simulado
   const generarJSON = async () => {
+    setCargando(true);
     const jsonFinal = {
       estado: "EN PROCESO",
       tramiteRelacionId: relacionId,
@@ -112,7 +127,7 @@ export default function TramiteSelector() {
       documentos: archivos.map((a) => ({
         nombre_archivo: a.name,
         ruta: URL.createObjectURL(a),
-        tipo: a.type || "PDF",
+        tipo: obtenerTipoCorto(a.type),
       })),
       trazabilidades: [
         {
@@ -125,23 +140,37 @@ export default function TramiteSelector() {
     //console.log("%c🧾 JSON listo para backend:", "color: blue; font-weight: bold;");
     console.log(jsonFinal);
 
-     try {
-    const res = await createTramite(jsonFinal);
-    console.log("✅ Respuesta del backend:", res);
-    //alert("Trámite creado correctamente 🎉");
-    setRtaBack({
-      icono:true, 
-      msj:"Trámite creado correctamente 🎉", 
-      link: {
-    url: "/dashboard/tramites",
-    text: "Ir a trámites"
-  }})
-  } catch (error) {
-    console.error("❌ Error al enviar trámite:", error);
-    //alert("Error al crear el trámite. Revisa la consola.");
-     setRtaBack({icono:false, msj:"Error al crear el trámite :(", link: null})
-  }
+    try {
+      const res = await createTramite(jsonFinal);
 
+      const codigo = res.data.codigoAso; 
+      console.log("✅ codigoAso", codigo);
+      const uploadResponse = await uploadTramiteFiles(codigo, archivos);
+       console.log("✅ uploadResponse", uploadResponse);
+
+
+
+      console.log("✅ Respuesta del backend:", res);
+      //alert("Trámite creado correctamente 🎉");
+      setRtaBack({
+        icono: true,
+        msj: "Trámite creado correctamente 🎉",
+        link: {
+          url: "/dashboard/tramites",
+          text: "Ir a trámites",
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error al enviar trámite:", error);
+      //alert("Error al crear el trámite. Revisa la consola.");
+      setRtaBack({
+        icono: false,
+        msj: "Error al crear el trámite :(",
+        link: null,
+      });
+    }  finally {
+    setCargando(false);
+  }
   };
 
   //.........................
@@ -258,52 +287,44 @@ export default function TramiteSelector() {
       {/* Mostrar InmuebleForm */}
       {solicitanteTipo && (
         <div className="mt-8 border-t pt-6 animate-fadeIn">
-          <InmuebleForm
-           setInmueble={setInmueble} 
-          />
+          <InmuebleForm setInmueble={setInmueble} />
         </div>
       )}
 
-       {solicitanteTipo && (
+      {solicitanteTipo && (
         <div className="mt-8 border-t pt-6 animate-fadeIn">
           {/* Archivos */}
           <FileUploader archivos={archivos} setArchivos={setArchivos} />
         </div>
       )}
 
-        {solicitanteTipo && (
+      {solicitanteTipo && (
         <div className="mt-8 border-t pt-6 animate-fadeIn">
-             {/* 🔹 Botón para generar JSON */}
-      <div className="mt-10 text-center">
-        <button
-          disabled={!puedeEnviar}
-          onClick={generarJSON}
-          className={`px-8 py-3 rounded-lg font-semibold text-white transition ${
-            puedeEnviar
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
-        >
-          Generar JSON
-        </button>
-        {!puedeEnviar && (
-          <p className="text-sm text-gray-600 mt-2">
-            ⚠️ Complete los campos mínimos para habilitar el botón.
-          </p>
-        )}
-      </div>
+          {/* 🔹 Botón para generar JSON */}
+          <div className="mt-10 text-center">
+            <button
+              disabled={!puedeEnviar}
+              onClick={generarJSON}
+              className={`px-8 py-3 rounded-lg font-semibold text-white transition ${
+                puedeEnviar
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+            >
+              Generar JSON
+            </button>
+            {!puedeEnviar && (
+              <p className="text-sm text-gray-600 mt-2">
+                ⚠️ Complete los campos mínimos para habilitar el botón.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
-
-
-    
-     <AnimatePresence>
+      <AnimatePresence>
         {rtaBack && (
-           <MessageCard 
-           rta={rtaBack} 
-           onClose={() => setRtaBack(null)}
-           />
+          <MessageCard rta={rtaBack} onClose={() => setRtaBack(null)} />
         )}
       </AnimatePresence>
     </div>

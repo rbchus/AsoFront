@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { Edit3 } from "lucide-react"; // 📘 Ícono de edición
 import EdicionEstadoCard from "./EdicionEstadoCard"; // Importa el nuevo modal
 import TrazabilidadCard from "./TrazabilidadCard";
+import DocumentosCard from "./DocumentosCard"
 import { useAuth } from "../context/AuthContext";
 import { getTramiteById } from "../services/tramitesService";
 
@@ -17,6 +18,7 @@ export default function TramiteDetalle({
   const { usuario } = useAuth();
   const [verTrazabilidad, setVerTrazabilidad] = useState(false);
   const [verEdicion, setVerEdicion] = useState(false);
+  const [verDocunentos, SetVerDocumentos] = useState(false);
 
   if (!tramiteLocal) return null;
 
@@ -160,6 +162,15 @@ export default function TramiteDetalle({
 
           {/* Formulario */}
        <div className="flex justify-center gap-6 mt-6">
+
+          <button
+    onClick={() => SetVerDocumentos(true)}
+    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+  >
+    📄 Ver Documentos
+  </button>
+
+
   <button
     onClick={() => setVerTrazabilidad(true)}
     className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
@@ -196,6 +207,14 @@ export default function TramiteDetalle({
             tramite={tramiteLocal}
             onClose={() => setVerEdicion(false)}
             onUpdated={refrescarTramite}
+          />
+        )}
+         {verDocunentos && (
+          <DocumentosCard
+            cod = {tramiteLocal.codigoAso}
+            docs={tramiteLocal.documentos}
+            onClose={() => SetVerDocumentos(false)}
+            
           />
         )}
       </AnimatePresence>

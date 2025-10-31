@@ -144,3 +144,43 @@ export const actualizarEstadoTramite = async (id, tramiteData) => {
     };
   }
 };
+
+// insertar documentos tramite
+
+export const insertarDocumentosTramite = async (id, documentosData) => {
+  try {
+    const response = await apiClient.post(`/documentos/${id}`, documentosData);
+    console.log(`✅ docuentos agragados a ${id}: `, response.data);
+
+    return {
+      success: true,
+      message: "Documentos Agregados exitosamente",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("❌ Error al agregar documento:", error);
+    throw {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        "Error al agregar  documentos",
+      statusCode: error.response?.status || 500,
+    };
+  }
+};
+
+// 🟣 Subir archivos del trámite
+export const uploadTramiteFiles = async (codigo, archivos) => {
+  try {
+    const formData = new FormData();
+    archivos.forEach((file) => formData.append("archivos", file));
+
+    const { data } = await apiClient.post(`/tramites/${codigo}/archivos`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  } catch (error) {
+    console.error("❌ Error al subir archivos:", error);
+    throw error.response?.data || { success: false, message: "Error al subir archivos" };
+  }
+};

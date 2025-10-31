@@ -1,10 +1,9 @@
-// src/pages/RegisterPage.jsx
 import React, { useState } from "react";
-import { register as apiRegister } from "../services/authService";
+import { createUserFromAdmin as apiRegister } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 
-export default function RegisterPage() {
+export default function RegisterAdminPage() {
   const [form, setForm] = useState({
     nombre: "",
     tipoDocumento: "",
@@ -13,8 +12,7 @@ export default function RegisterPage() {
     confirmarTelefono: "",
     correo: "",
     confirmarCorreo: "",
-    password: "",
-    confirmarPassword: "",
+    rol: "",
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -24,13 +22,8 @@ export default function RegisterPage() {
     e.preventDefault();
     setMsg(null);
 
-    // ✅ Validaciones antes de enviar
     if (form.correo !== form.confirmarCorreo) {
       setMsg("❌ Los correos electrónicos no coinciden.");
-      return;
-    }
-    if (form.password !== form.confirmarPassword) {
-      setMsg("❌ Las contraseñas no coinciden.");
       return;
     }
     if (form.telefono !== form.confirmarTelefono) {
@@ -39,39 +32,31 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    
     try {
-  await apiRegister({
-    nombre: form.nombre,
-    tipoDocumento: form.tipoDocumento,
-    numeroDocumento: form.numeroDocumento,
-    telefono: form.telefono,
-    correo: form.correo,
-    password: form.password,
-  });
+      await apiRegister({
+        nombre: form.nombre,
+        tipoDocumento: form.tipoDocumento,
+        numeroDocumento: form.numeroDocumento,
+        telefono: form.telefono,
+        correo: form.correo,
+        rol: form.rol,
+      });
 
-  setMsg("✅ Registro exitoso. Redirigiendo...");
-  setTimeout(() => navigate("/login"), 1200);
-} catch (error) {
-  console.error("❌ Error al registrar:", error);
+      setMsg("✅ Usuario registrado correctamente.");
+      setTimeout(() => navigate("/usuarios"), 1500);
+    } catch (error) {
+      console.error("❌ Error al registrar:", error);
 
-  if (error.response?.status === 409) {
-    // ⚠️ Error específico de conflicto (correo duplicado)
-    setMsg(error.response.data.message || "Ya existe un usuario con esos datos.");
-  } else if (error.response?.status === 400) {
-    // ⚠️ Error de validación
-    setMsg("Datos inválidos, revisa el formulario.");
-  } else {
-    // ⚠️ Otros errores genéricos
-    setMsg("❌ Error al registrar, inténtalo de nuevo.");
-  }
-} finally {
-  setLoading(false);
-}
-
-
-
-
+      if (error.response?.status === 409) {
+        setMsg(error.response.data.message || "El usuario ya existe.");
+      } else if (error.response?.status === 400) {
+        setMsg("Datos inválidos, revisa el formulario.");
+      } else {
+        setMsg("❌ Error al registrar, inténtalo de nuevo.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -79,7 +64,9 @@ export default function RegisterPage() {
       <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-lg w-full max-w-2xl">
         <div className="flex items-center justify-center mb-6">
           <UserPlus className="text-emerald-600 w-7 h-7 mr-2" />
-          <h2 className="text-2xl font-bold text-gray-800">Registro</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            Registro de Usuario (Admin)
+          </h2>
         </div>
 
         {msg && (
@@ -108,12 +95,10 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={form.nombre}
-                  onChange={(e) =>
-                    setForm({ ...form, nombre: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                   required
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Ej: Ana Gómez"
                 />
               </div>
 
@@ -168,9 +153,7 @@ export default function RegisterPage() {
                 <input
                   type="tel"
                   value={form.telefono}
-                  onChange={(e) =>
-                    setForm({ ...form, telefono: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                   required
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Ej: 3001234567"
@@ -200,9 +183,7 @@ export default function RegisterPage() {
                 <input
                   type="email"
                   value={form.correo}
-                  onChange={(e) =>
-                    setForm({ ...form, correo: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, correo: e.target.value })}
                   required
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="correo@ejemplo.com"
@@ -227,44 +208,22 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* ACCESO */}
+          {/* ROL */}
           <div>
             <h3 className="text-lg font-semibold text-emerald-700 mb-2">
-              🔐 Acceso
+              👤 Rol del usuario
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Contraseña
-                </label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm({ ...form, password: e.target.value })
-                  }
-                  required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
-                  placeholder="********"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Confirmar contraseña
-                </label>
-                <input
-                  type="password"
-                  value={form.confirmarPassword}
-                  onChange={(e) =>
-                    setForm({ ...form, confirmarPassword: e.target.value })
-                  }
-                  required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
-                  placeholder="Repite la contraseña"
-                />
-              </div>
-            </div>
+            <select
+              value={form.rol}
+              onChange={(e) => setForm({ ...form, rol: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+            >
+              <option value="">Seleccione un rol...</option>
+              <option value="CIUDADANO">CIUDADANO</option>
+              <option value="GESTOR">GESTOR</option>
+              <option value="SUPERVISOR">SUPERVISOR</option>
+            </select>
           </div>
 
           {/* BOTÓN */}
@@ -277,18 +236,8 @@ export default function RegisterPage() {
                 : "bg-emerald-600 hover:bg-emerald-700"
             }`}
           >
-            {loading ? "Registrando..." : "Registrar"}
+            {loading ? "Registrando..." : "Registrar usuario"}
           </button>
-
-          <p className="text-sm text-center text-gray-600 mt-4">
-            ¿Ya tienes cuenta?{" "}
-            <a
-              href="/login"
-              className="text-emerald-600 hover:text-emerald-700 font-medium"
-            >
-              Inicia sesión
-            </a>
-          </p>
         </form>
       </div>
     </div>
