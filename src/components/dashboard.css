@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- animación personalizada --- */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
 /* ============================
    VARIABLES GLOBALES
 ============================ */
