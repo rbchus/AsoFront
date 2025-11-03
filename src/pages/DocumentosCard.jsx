@@ -69,33 +69,67 @@ export default function DocumentosCard({ cod, docs = [], onClose }) {
   };
 
   // 🔹 Función para forzar descarga
-  const handleDownload = (nombre) => {
-    const link = document.createElement("a");
-    link.href = `${basePHAT}/dataset/${cod}/${nombre}`;
-    link.download = nombre;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (nombre) => {
+    try {
+      const url = `${basePHAT}/dataset/${cod}/${nombre}`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        // 404, 403, etc.
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      saveAs(blob, nombre);
+    } catch (err) {
+      console.error("Error descargando archivo:", nombre, err);
+      // Mensaje al usuario (puedes reemplazar por tu sistema de toasts)
+      alert(
+        `No se pudo descargar "${nombre}". Puede que el archivo no exista o hubo un error en el servidor.`
+      );
+    }
   };
 
   // 🔹 Descargar todos los documentos en un ZIP
   const descargarZip = async () => {
     const zip = new JSZip();
+    const failed = [];
+
     for (const doc of documentosFiltrados) {
       try {
-        const response = await fetch(
-          `${basePHAT}/dataset/${cod}/${doc.nombre_archivo}`
-        );
-        const blob = await response.blob();
+        const url = `${basePHAT}/dataset/${cod}/${doc.nombre_archivo}`;
+        const res = await fetch(url);
+
+        if (!res.ok) {
+          failed.push(doc.nombre_archivo);
+          console.error("HTTP error", res.status, "->", doc.nombre_archivo);
+          continue;
+        }
+
+        const blob = await res.blob();
         zip.file(doc.nombre_archivo, blob);
       } catch (error) {
         console.error("Error descargando archivo:", doc.nombre_archivo, error);
+        failed.push(doc.nombre_archivo);
       }
     }
+
+    // Si no hubo archivos válidos
+    if (Object.keys(zip.files).length === 0) {
+      alert(
+        "No se pudieron descargar los archivos. Verifica que existan en el servidor."
+      );
+      return;
+    }
+
     const contenido = await zip.generateAsync({ type: "blob" });
     saveAs(contenido, "documentos.zip");
+
+    if (failed.length) {
+      alert(
+        `No se pudieron descargar los siguientes archivos: ${failed.join(", ")}`
+      );
+    }
   };
 
   // 🔹 Cambiar página
@@ -158,15 +192,12 @@ export default function DocumentosCard({ cod, docs = [], onClose }) {
                 >
                   <div className="flex items-center gap-3">
                     {getIcono(doc.tipo)}
-                    <a
-                      href={`${basePHAT}/dataset/${cod}/${doc.nombre_archivo}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-700 hover:underline text-sm font-medium truncate max-w-[180px]"
+                    <span
+                      className="text-gray-800 text-sm font-medium truncate max-w-[180px] block"
                       title={doc.nombre_archivo}
                     >
                       {doc.nombre_archivo}
-                    </a>
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-3">
