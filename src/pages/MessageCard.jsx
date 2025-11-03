@@ -7,7 +7,7 @@ export default function MessageCard({ rta, onClose }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log(rta);
+   // console.log(rta);
     setLoading(false);
   }, [rta]);
 

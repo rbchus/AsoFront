@@ -8,7 +8,6 @@ import DocumentosCard from "./DocumentosCard"
 import { useAuth } from "../context/AuthContext";
 import { getTramiteById } from "../services/tramitesService";
 
-
 export default function TramiteDetalle({
   tramite,
   onClose,
@@ -19,16 +18,17 @@ export default function TramiteDetalle({
   const [verTrazabilidad, setVerTrazabilidad] = useState(false);
   const [verEdicion, setVerEdicion] = useState(false);
   const [verDocunentos, SetVerDocumentos] = useState(false);
-
+    
   if (!tramiteLocal) return null;
 
-  console.log('...Detalle Tramite' , tramite);
+  //console.log('...Detalle Tramite' , tramite);
 
   const refrescarTramite = async () => {
   try {
     const res = await getTramiteById(tramiteLocal.id);
-    console.log('refrecar tramite' , res.data);
+   // console.log('refrecar tramite' , res.data);
     setTramiteLocal(res.data);
+
   } catch (err) {
     console.error("❌ Error al refrescar el trámite:", err);
   }
@@ -55,6 +55,7 @@ export default function TramiteDetalle({
           className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-8 overflow-y-auto max-h-[85vh]"
         >
           {/* Header */}
+          
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h3 className="text-2xl font-semibold text-gray-800">
               Detalle del Trámite #{tramiteLocal.codigoAso}

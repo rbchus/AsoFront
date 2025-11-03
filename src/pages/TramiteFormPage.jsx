@@ -9,7 +9,7 @@ const TramiteFormPage = () => {
 
 
    useEffect(() => {
-      console.log(`... desde TramiteFormPage ${tramite}`)
+      //console.log(`... desde TramiteFormPage ${tramite}`)
     }, [tramite]);
 
 

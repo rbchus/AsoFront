@@ -11,7 +11,7 @@ useEffect(() => {
   }, []);
 
 useEffect(() => {
-    console.log(tramites)
+   // console.log(tramites)
   }, [tramites]);
 
 return (

@@ -70,7 +70,7 @@ export const getTramiteById = async (id) => {
 export const createTramite = async (tramiteData) => {
   try {
     const response = await apiClient.post("/tramites", tramiteData);
-    console.log("✅ Trámite creado:", response.data);
+   // console.log("✅ Trámite creado:", response.data);
 
     return {
       success: true,
@@ -126,7 +126,7 @@ export const getGestores = async () => {
 export const actualizarEstadoTramite = async (id, tramiteData) => {
   try {
     const response = await apiClient.put(`/tramites/${id}/estado`, tramiteData);
-    console.log("✅ Trámite actualizado", response.data);
+   // console.log("✅ Trámite actualizado", response.data);
 
     return {
       success: true,
@@ -150,7 +150,7 @@ export const actualizarEstadoTramite = async (id, tramiteData) => {
 export const insertarDocumentosTramite = async (id, documentosData) => {
   try {
     const response = await apiClient.post(`/documentos/${id}`, documentosData);
-    console.log(`✅ docuentos agragados a ${id}: `, response.data);
+   // console.log(`✅ docuentos agragados a ${id}: `, response.data);
 
     return {
       success: true,

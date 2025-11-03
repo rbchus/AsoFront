@@ -5,6 +5,7 @@ import TramiteDetalle from "./TramiteDetalle";
 import TramitesEstadisticas from "./TramitesEstadisticas";
 import { Eye, BarChart3 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function TramiteLista() {
   const { usuario } = useAuth();
@@ -23,11 +24,13 @@ export default function TramiteLista() {
   const [porPagina] = useState(5);
   const [tramiteSeleccionado, setTramiteSeleccionado] = useState(null);
   const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
+   const [cargando, setCargando] = useState(true);
 
   // 🔹 Cargar datos
   const fetchData = async () => {
     const res = await getTramites();
     setTramites(res.data || []);
+    setCargando(false)
   };
 
   useEffect(() => {
@@ -112,6 +115,7 @@ export default function TramiteLista() {
 
   return (
     <div className="p-6 w-full max-w-7xl mx-auto bg-white mt-10 rounded-2xl shadow-md relative">
+    {cargando && <LoadingOverlay text="Cargando Trámites, por favor espere..." />}
       {/* 🔹 Filtros */}
       <div className="flex flex-col">
         {/* ID del Trámite */}

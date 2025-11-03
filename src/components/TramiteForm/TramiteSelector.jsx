@@ -4,6 +4,7 @@ import FileUploader from "./FileUploader";
 import InmuebleForm from "./InmuebleForm";
 import TitularForm from "./TitularForm";
 import MessageCard from "../../pages/MessageCard";
+import LoadingOverlay from "../../components/LoadingOverlay";
 
 import SelectSolicitanteTipo from "./SelectSolicitanteTipo";
 
@@ -30,14 +31,16 @@ export default function TramiteSelector() {
   const [razon, setRazon] = useState("");
   const [inmueble, setInmueble] = useState([]);
   const [rtaBack, setRtaBack] = useState(null);
-  const [cargando, setCargando] = useState(false);
+  const [cargando, setCargando] = useState(true);
 
   const maxLength = 250;
 
   useEffect(() => {
+    setCargando(true);
     const fetchData = async () => {
       const res = await getTramitesRelacion();
       setTramites(res.data);
+     setCargando(false)
     };
     fetchData();
   }, []);
@@ -65,14 +68,14 @@ export default function TramiteSelector() {
     if (subTramiteSeleccionado) {
       //console.log("📄 SubTrámite Seleccionado:");
       //console.log(`ID: ${subTramiteSeleccionado.id}, Nombre: ${subTramiteSeleccionado.nombre}`);
-      console.log(`🔗 Tramite y subTramite (tramiteRelacionId): ${relacionId}`);
-      console.log(
+     // console.log(`🔗 Tramite y subTramite (tramiteRelacionId): ${relacionId}`);
+     /*  console.log(
         "%c✅ Solicitante tipo seleccionado (solicitanteTipoId):",
         "color: green;",
         solicitanteTipo
-      );
-      console.log("%c✅ titulares :", "color: green;", titulares);
-      console.log("%c✅ inmbiueble :", "color: blue;", inmueble);
+      ); */
+     // console.log("%c✅ titulares :", "color: green;", titulares);
+    //  console.log("%c✅ inmbiueble :", "color: blue;", inmueble);
     }
   }, [
     tramiteSeleccionado,
@@ -138,19 +141,19 @@ export default function TramiteSelector() {
     };
 
     //console.log("%c🧾 JSON listo para backend:", "color: blue; font-weight: bold;");
-    console.log(jsonFinal);
+    //console.log(jsonFinal);
 
     try {
       const res = await createTramite(jsonFinal);
 
       const codigo = res.data.codigoAso; 
-      console.log("✅ codigoAso", codigo);
+      //console.log("✅ codigoAso", codigo);
       const uploadResponse = await uploadTramiteFiles(codigo, archivos);
-       console.log("✅ uploadResponse", uploadResponse);
+       //console.log("✅ uploadResponse", uploadResponse);
 
 
 
-      console.log("✅ Respuesta del backend:", res);
+      //console.log("✅ Respuesta del backend:", res);
       //alert("Trámite creado correctamente 🎉");
       setRtaBack({
         icono: true,
@@ -177,6 +180,8 @@ export default function TramiteSelector() {
 
   return (
     <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-8 mt-8 transition-all duration-300">
+     {cargando && <LoadingOverlay text="Creando tramite, por favor espere..." />}
+
       <h1 className="text-2xl font-bold text-center text-gray-800 mb-8">
         Gestión de Trámites Catastrales
       </h1>
@@ -311,7 +316,7 @@ export default function TramiteSelector() {
                   : "bg-gray-400 cursor-not-allowed"
               }`}
             >
-              Generar JSON
+              Crear Trámite
             </button>
             {!puedeEnviar && (
               <p className="text-sm text-gray-600 mt-2">
