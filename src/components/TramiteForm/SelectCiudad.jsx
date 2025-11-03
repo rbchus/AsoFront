@@ -8,7 +8,7 @@ export default function SelectCiudad({selectId}) {
   useEffect(() => {
      const fetchMunicipios = async () => {
        const res = await getCiudades();
-       console.log("%c🧑‍💼 Ciudades:", "color: gray;", res);
+      // console.log("%c🧑‍💼 Ciudades:", "color: gray;", res);
        setCiudades(res.data);
      };
      fetchMunicipios();

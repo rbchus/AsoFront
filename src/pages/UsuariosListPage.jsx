@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getUsuarios, actualizarRolUsuario } from "../services/usuariosService"; // Crear estos servicios
 import { AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function UsuariosListPage() {
   const { usuario: usuarioLogueado } = useAuth();
@@ -13,15 +14,18 @@ export default function UsuariosListPage() {
   const [paginaActual, setPaginaActual] = useState(1);
   const [porPagina] = useState(5);
 
+  const [cargando, setCargando] = useState(true);
+
   // 🔹 Cargar datos
   const fetchUsuarios = async () => {
     const res = await getUsuarios();
-    console.log(res.data);
+    //console.log(res.data);
     setUsuarios(res.data || []);
+     setCargando(false)
   };
 
   useEffect(() => {
-    console.log(" ..... USAURIOS ADMIN ......");
+   // console.log(" ..... USAURIOS ADMIN ......");
     fetchUsuarios();
   }, []);
 
@@ -53,7 +57,7 @@ export default function UsuariosListPage() {
   const handleCambiarRol = async (id_usuario, nuevoRol) => {
   try {
     const objeto = { rol: nuevoRol };
-    console.log(`${id_usuario} cambiar al rol ${nuevoRol}`);
+    //console.log(`${id_usuario} cambiar al rol ${nuevoRol}`);
 
    await actualizarRolUsuario(id_usuario, objeto);
 
@@ -73,6 +77,7 @@ export default function UsuariosListPage() {
 
   return (
     <div className="p-6 w-full max-w-7xl mx-auto bg-white mt-10 rounded-2xl shadow-md relative">
+      {cargando && <LoadingOverlay text="Cargando Usuarios, por favor espere..." />}
       {/* 🔹 Filtro global */}
       <div className="mb-4 flex flex-col sm:flex-row gap-3">
         <input

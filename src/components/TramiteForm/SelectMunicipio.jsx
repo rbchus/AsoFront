@@ -8,7 +8,7 @@ export default function SelectMunicipio({selectId}) {
   useEffect(() => {
      const fetchMunicipios = async () => {
        const res = await getMunicipios();
-       console.log("%c🧑‍💼 Municipios:", "color: red;", res);
+       //console.log("%c🧑‍💼 Municipios:", "color: red;", res);
        setMunicipios(res.data);
      };
      fetchMunicipios();

@@ -38,7 +38,7 @@ export const getUsuarios = async () => {
 export const actualizarRolUsuario = async (id, payload) => {
      try {
     const response = await apiClient.put(`/usuarios/${id}/`, payload);
-    console.log("✅ Estado actualizado", response.data);
+   // console.log("✅ Estado actualizado", response.data);
 
     return {
       success: true,

@@ -5,7 +5,7 @@ export const getTrazabilidadByTramite = async (id) => {
   try {
     const response = await apiClient.get(`/tramites/${id}/trazabilidad`);
    // console.log("✅ Endpoint:", `/tramites/${id}/trazabilidad`);
-   console.log("📦 Respuesta:=>", response.data);
+   //console.log("📦 Respuesta:=>", response.data);
 
     // Desestructura correctamente
     const { historial, tramiteId, totalRegistros } = response.data;

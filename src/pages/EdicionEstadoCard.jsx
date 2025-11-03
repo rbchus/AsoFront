@@ -80,8 +80,8 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
       tipo: obtenerTipoCorto(a.type),
     }));
 
-    console.log("✅ Documentos a enviar:", documentos);
-    console.log("✅ Actualización:", tramite.id, payload);
+   // console.log("✅ Documentos a enviar:", documentos);
+    //console.log("✅ Actualización:", tramite.id, payload);
 
     // ⚙️ Verificar si la observación está vacía antes de guardar
     let observacionFinal = observacion?.trim() || "";
@@ -106,20 +106,20 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
     // 🧾 Insertar documentos si existen
     if (documentos && documentos.length > 0) {
       const resDoc = await insertarDocumentosTramite(tramite.id, documentos, observacionFinal);
-      console.log("✅ Documentos agregados:", resDoc.data);
+      //.log("✅ Documentos agregados:", resDoc.data);
     } else {
-      console.log("⚠️ No hay documentos para agregar.");
+     // console.log("⚠️ No hay documentos para agregar.");
     }
 
     // 📤 Subida de archivos reales al backend
     if (archivos && archivos.length > 0) {
       const uploadResponse = await uploadTramiteFiles(tramite.codigoAso, archivos);
-      console.log("✅ uploadResponse", uploadResponse);
+     // console.log("✅ uploadResponse", uploadResponse);
     } else {
       console.log("⚠️ No hay archivos para subir.");
     }
 
-    console.log("✅ Actualización completa:", res.data);
+   // console.log("✅ Actualización completa:", res.data);
 
     if (onUpdated) onUpdated();
     onClose();
