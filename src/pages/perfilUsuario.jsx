@@ -33,7 +33,7 @@ export default function PerfilUsuario() {
     setLoading(true);
     try {
        const objeto = { newPass: password };
-        console.log(`cmbiar al pass ${objeto}`);
+       // console.log(`cmbiar al pass ${objeto}`);
       await changePassword(objeto);
       setMsg("✅ Contraseña actualizada correctamente.");
       setPassword("");
