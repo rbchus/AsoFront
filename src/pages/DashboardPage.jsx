@@ -12,7 +12,7 @@ export default function DashboardPage() {
         className="text-center mb-10"
       >
         <img
-          src="/logo_catatumbo.png"
+          src="/asomunicipios.svg"
           alt="Logo Asociación de Municipios del Catatumbo"
           className="w-32 h-32 mx-auto mb-4 rounded-full shadow-md"
         />
