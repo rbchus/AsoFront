@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, FilePlus2 } from "lucide-react";
 
 import SelectMunicipio from "./SelectMunicipio";
-
+import { getMunicipios } from "../../services/municipiosService.js";
 
 export default function InmuebleForm({ setInmueble }) {
   const [formData, setFormData] = useState([]);
@@ -12,6 +12,17 @@ export default function InmuebleForm({ setInmueble }) {
   const [fichaCatrastal, setFichaCatrastal] = useState("");
   const [matriculaInmobiliaria, setMatriculaInmobiliaria] = useState("");
   const [idMunicipio, setIdMunicipio] = useState("");
+  const [municipios, setMunicipios] = useState([]);
+
+  const fetchMunicipios = async () => {
+    const res = await getMunicipios();
+    //console.log("%c🧑‍💼 Municipios:", "color: red;", res);
+    setMunicipios(res.data);
+  };
+
+  useEffect(() => {
+    fetchMunicipios();
+  }, []);
 
   useEffect(() => {
     const data = {
@@ -68,7 +79,10 @@ export default function InmuebleForm({ setInmueble }) {
 
             {/* Municipio */}
             <div className="md:col-span-1">
-              <SelectMunicipio selectId={setIdMunicipio} />
+              <SelectMunicipio
+                municipiosList={municipios}
+                selectId={setIdMunicipio}
+              />
             </div>
 
             {/* Ficha Catastral */}

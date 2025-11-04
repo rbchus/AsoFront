@@ -62,14 +62,8 @@ export default function TramiteLista() {
   );
 
   // 🔹 Filtrado principal
-    // 🔹 Filtrado principal
   const tramitesFiltrados = useMemo(() => {
     return tramites.filter((t) => {
-      // 🚫 Si el usuario es GESTOR, ocultar trámites FINALIZADOS
-      if (usuario?.rol === "GESTOR" && t.estado === "FINALIZADO") {
-        return false;
-      }
-
       const fecha = new Date(t.fechaCreacion);
       if (fechaInicio && fecha < new Date(fechaInicio)) return false;
       if (fechaFin && fecha > new Date(fechaFin)) return false;
@@ -103,10 +97,7 @@ export default function TramiteLista() {
     filtroEstado,
     fechaInicio,
     fechaFin,
-    usuario, // 👈 importante para re-evaluar al cambiar de usuario
   ]);
-
-  
 
   // 🔹 Paginación
   const indiceInicial = (paginaActual - 1) * porPagina;
