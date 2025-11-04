@@ -8,6 +8,7 @@ import TramiteFormPage from "./pages/TramiteFormPage";
 import TramiteListPage from "./pages/TramiteListPage";
 import UsuariosListPage from "./pages/UsuariosListPage";
 import PerfilUsuario from "./pages/perfilUsuario";
+import AsignarGestorMunicipio from "./pages/AsignarGestorMunicipio";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -56,7 +57,7 @@ function App() {
         <Route
           path="admin/usuarios"
           element={
-            <ProtectedRoute allowedRoles={["ADMIN", "ADMINISTRADOR"]}>
+            <ProtectedRoute allowedRoles={["ADMIN", "ADMINISTRADOR","ATENCION_AL_USUARIO"]}>
               <UsuariosListPage />
             </ProtectedRoute>
           }
@@ -66,6 +67,14 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "ADMINISTRADOR"]}>
             <RegisterAdminPage />
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path="admin/gestor"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "ADMINISTRADOR"]}>
+            <AsignarGestorMunicipio />
           </ProtectedRoute>
         }
       />

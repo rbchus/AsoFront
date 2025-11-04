@@ -1,34 +1,42 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Edit3 } from "lucide-react";
-import EdicionEstadoCard from "./EdicionEstadoCard";
+import { motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import { Edit3 } from "lucide-react"; // 📘 Ícono de edición
+import EdicionEstadoCard from "./EdicionEstadoCard"; // Importa el nuevo modal
 import TrazabilidadCard from "./TrazabilidadCard";
-import DocumentosCard from "./DocumentosCard";
+import DocumentosCard from "./DocumentosCard"
 import { useAuth } from "../context/AuthContext";
 import { getTramiteById } from "../services/tramitesService";
 
-export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
+export default function TramiteDetalle({
+  tramite,
+  onClose,
+  onActualizar,
+}) {
   const [tramiteLocal, setTramiteLocal] = useState(tramite);
   const { usuario } = useAuth();
   const [verTrazabilidad, setVerTrazabilidad] = useState(false);
   const [verEdicion, setVerEdicion] = useState(false);
   const [verDocunentos, SetVerDocumentos] = useState(false);
-
+    
   if (!tramiteLocal) return null;
 
-  const refrescarTramite = async () => {
-    try {
-      const res = await getTramiteById(tramiteLocal.id);
-      setTramiteLocal(res.data);
-    } catch (err) {
-      console.error("❌ Error al refrescar el trámite:", err);
-    }
-    onActualizar();
-  };
+  //console.log('...Detalle Tramite' , tramite);
 
-  const puedeEditar =
-    usuario?.rol !== "CIUDADANO" ||
-    (usuario?.rol === "CIUDADANO" && tramiteLocal.estado === "RECHAZADO");
+  const refrescarTramite = async () => {
+  try {
+    const res = await getTramiteById(tramiteLocal.id);
+   // console.log('refrecar tramite' , res.data);
+    setTramiteLocal(res.data);
+
+  } catch (err) {
+    console.error("❌ Error al refrescar el trámite:", err);
+  }
+  onActualizar()
+};
+
+
+  //console.log(tramite);
 
   return (
     <>
@@ -47,6 +55,7 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
           className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-8 overflow-y-auto max-h-[85vh]"
         >
           {/* Header */}
+          
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h3 className="text-2xl font-semibold text-gray-800">
               Detalle del Trámite #{tramiteLocal.codigoAso}
@@ -96,7 +105,7 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
           {/* Observación */}
           {tramiteLocal.razones && (
             <div className="mt-4">
-              <strong>Razón solicitud:</strong>
+              <strong>Razon solicitud:</strong>
               <p className="bg-gray-50 border p-3 rounded-lg mt-1 text-gray-700">
                 {tramiteLocal.razones}
               </p>
@@ -105,20 +114,19 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
 
           <div className="grid md:grid-cols-3 gap-6 text-sm text-gray-700 mt-4">
             <p>
-              <strong>Tipo suelo:</strong>{" "}
-              {tramiteLocal.inmuebles?.[0]?.tipo || "-"}
+              <strong>Tipo suelo:</strong> {tramiteLocal.inmuebles?.[0]?.tipo || "-"}
             </p>
             <p>
-              <strong>Ficha Catastral:</strong>{" "}
+              <strong>Ficha Catrastal:</strong>{" "}
               {tramiteLocal.inmuebles?.[0]?.ficha || "Sin asignar"}
             </p>
             <p>
-              <strong>Matrícula inmobiliaria:</strong>{" "}
+              <strong>Matricula inmobiliaria:</strong>{" "}
               {tramiteLocal.inmuebles?.[0]?.matricula}
             </p>
           </div>
 
-          {/* 🔹 Titulares */}
+          {/* 🔹 Tabla de Titulares */}
           {tramiteLocal.titulares && tramiteLocal.titulares.length > 0 && (
             <div className="mt-8">
               <h4 className="text-lg font-semibold text-gray-800 mb-2">
@@ -153,37 +161,41 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
             </div>
           )}
 
-          {/* Botones */}
-          <div className="flex justify-center gap-6 mt-6">
-            <button
-              onClick={() => SetVerDocumentos(true)}
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              📄 Ver Documentos
-            </button>
+          {/* Formulario */}
+       <div className="flex justify-center gap-6 mt-6">
 
-            <button
-              onClick={() => setVerTrazabilidad(true)}
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              📊 Ver Trazabilidad
-            </button>
+          <button
+    onClick={() => SetVerDocumentos(true)}
+    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+  >
+    📄 Ver Documentos
+  </button>
 
-            {puedeEditar && (
-              <button
-                onClick={() => setVerEdicion(true)}
-                className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700"
-                title="Editar estado y gestor"
-              >
-                <Edit3 size={20} />
-                Editar
-              </button>
-            )}
-          </div>
+
+  <button
+    onClick={() => setVerTrazabilidad(true)}
+    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+  >
+    📄 Ver trazabilidad
+  </button>
+
+  {usuario?.rol !== "CIUDADANO" && (
+    <button
+      onClick={() => setVerEdicion(true)}
+      className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700"
+      title="Editar estado y gestor"
+    >
+      <Edit3 size={20} />
+      Editar
+    </button>
+  )}
+</div>
+
         </motion.div>
       </motion.div>
+      {/* 🧾 Modal trazabilidad */}
 
-      {/* Modales */}
+      {/* 🧾 Modal trazabilidad */}
       <AnimatePresence>
         {verTrazabilidad && (
           <TrazabilidadCard
@@ -198,11 +210,12 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
             onUpdated={refrescarTramite}
           />
         )}
-        {verDocunentos && (
+         {verDocunentos && (
           <DocumentosCard
-            cod={tramiteLocal.codigoAso}
+            cod = {tramiteLocal.codigoAso}
             docs={tramiteLocal.documentos}
             onClose={() => SetVerDocumentos(false)}
+            
           />
         )}
       </AnimatePresence>

@@ -184,3 +184,49 @@ export const uploadTramiteFiles = async (codigo, archivos) => {
     throw error.response?.data || { success: false, message: "Error al subir archivos" };
   }
 };
+
+export const actualizarGestorMunicipios = async (id, tramiteData) => {
+  try {
+    const response = await apiClient.patch(`/tramites/asignar-por-municipio/${id}`, tramiteData);
+   // console.log("✅ Trámite actualizado", response.data);
+
+    return {
+      success: true,
+      message: "✅ Trámites asignados  exitosamente",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("❌ Error al asignar   trámites:", error);
+    throw {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        "Error al asignar  trámites",
+      statusCode: error.response?.status || 500,
+    };
+  }
+};
+
+
+export const actualizarGestorMunicipio = async (id, tramiteData) => {
+  try {
+    const response = await apiClient.put(`/municipios/${id}`, tramiteData);
+   // console.log("✅ Trámite actualizado", response.data);
+
+    return {
+      success: true,
+      message: "✅ Municipio Asigando correctamente",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("❌ Error al asignar   municiopio:", error);
+    throw {
+      success: false,
+      message:  
+        error.response?.data?.message ||
+        "Error al asignar  municipio",
+      statusCode: error.response?.status || 500,
+    };
+  }
+};
+

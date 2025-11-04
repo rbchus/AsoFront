@@ -21,7 +21,7 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // 🔹 Estados válidos
+  // 🔹 Estados permitidos base
   const estadosBase = [
     "RADICADO",
     "ASIGNADO",
@@ -31,15 +31,13 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
     "FINALIZADO",
   ];
 
-  // 🔹 Control de permisos
-  const esCiudadano = usuario?.rol === "CIUDADANO";
-
-  // 🔹 Filtrar estados según rol
+  // 🔹 Filtrar según el rol
   const estados =
     usuario?.rol === "ADMIN" || usuario?.rol === "ATENCION_AL_USUARIO"
       ? estadosBase
       : estadosBase.filter((e) => e !== "DEVUELTO" && e !== "FINALIZADO");
 
+  // 🔹 Si el trámite tiene un estado no visible, agregarlo temporalmente
   const estadosDisponibles = estados.includes(tramite.estado)
     ? estados
     : [tramite.estado, ...estados];
@@ -48,6 +46,7 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
     const fetchGestores = async () => {
       try {
         const res = await getGestores();
+        // 🔸 Oculta el gestor logueado
         const otrosGestores = (res.data || []).filter(
           (g) => g.id_usuario !== usuario?.id_usuario
         );
@@ -58,9 +57,8 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
         setLoading(false);
       }
     };
-    if (!esCiudadano) fetchGestores();
-    else setLoading(false);
-  }, [usuario, esCiudadano]);
+    fetchGestores();
+  }, [usuario]);
 
   const obtenerTipoCorto = (mimeType) => {
     if (!mimeType) return "OTRO";
@@ -78,12 +76,8 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
       setSaving(true);
 
       const payload = {
-        estado: esCiudadano ? "ASIGNADO" : nuevoEstado,
-        gestorAsignadoId: esCiudadano
-          ? tramite.gestorAsignado?.id_usuario || null
-          : nuevoGestor
-          ? parseInt(nuevoGestor)
-          : null,
+        estado: nuevoEstado,
+        gestorAsignadoId: nuevoGestor ? parseInt(nuevoGestor) : null,
         observacion,
         usuarioLogueado: {
           id: usuario?.id,
@@ -105,7 +99,6 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
         if (archivos.length > 0) {
           observacionFinal = "Se agregaron documentos al trámite.";
         } else if (
-          !esCiudadano &&
           nuevoGestor &&
           nuevoGestor !== tramite.gestorAsignado?.id_usuario
         ) {
@@ -115,15 +108,8 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
           observacionFinal = `Se asignó el gestor ${
             gestorSeleccionado?.nombre || ""
           }.`;
-        } else if (
-          !esCiudadano &&
-          nuevoEstado &&
-          nuevoEstado !== tramite.estado
-        ) {
+        } else if (nuevoEstado && nuevoEstado !== tramite.estado) {
           observacionFinal = `Se cambió el estado del trámite a ${nuevoEstado}.`;
-        } else if (esCiudadano) {
-          observacionFinal =
-            "El ciudadano actualizó la información del trámite.";
         }
       }
 
@@ -133,11 +119,7 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
       });
 
       if (documentos && documentos.length > 0) {
-        await insertarDocumentosTramite(
-          tramite.id,
-          documentos,
-          observacionFinal
-        );
+        await insertarDocumentosTramite(tramite.id, documentos, observacionFinal);
       }
 
       if (archivos && archivos.length > 0) {
@@ -185,46 +167,42 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
           </p>
         ) : (
           <div className="space-y-4">
-            {/* Estado */}
-            {!esCiudadano && (
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Estado del Trámite
-                </label>
-                <select
-                  value={nuevoEstado}
-                  onChange={(e) => setNuevoEstado(e.target.value)}
-                  className="w-full border rounded-lg p-2"
-                >
-                  {estadosDisponibles.map((estado) => (
-                    <option key={estado} value={estado}>
-                      {estado}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Estado del trámite */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Estado del Trámite
+              </label>
+              <select
+                value={nuevoEstado}
+                onChange={(e) => setNuevoEstado(e.target.value)}
+                className="w-full border rounded-lg p-2"
+              >
+                {estadosDisponibles.map((estado) => (
+                  <option key={estado} value={estado}>
+                    {estado}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            {/* Gestor */}
-            {!esCiudadano && (
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Gestor Asignado
-                </label>
-                <select
-                  value={nuevoGestor}
-                  onChange={(e) => setNuevoGestor(e.target.value)}
-                  className="w-full border rounded-lg p-2"
-                >
-                  <option value="">Seleccionar Gestor</option>
-                  {gestores.map((g) => (
-                    <option key={g.id_usuario} value={g.id_usuario}>
-                      {g.rol} {g.nombre} ({g.correo})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Gestor Asignado */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Gestor Asignado
+              </label>
+              <select
+                value={nuevoGestor}
+                onChange={(e) => setNuevoGestor(e.target.value)}
+                className="w-full border rounded-lg p-2"
+              >
+                <option value="">Seleccionar Gestor</option>
+                {gestores.map((g) => (
+                  <option key={g.id_usuario} value={g.id_usuario}>
+                    {g.rol} {g.nombre} ({g.correo})
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Observación */}
             <div>
