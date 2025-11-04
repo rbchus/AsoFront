@@ -131,7 +131,7 @@ export default function UsuariosListPage() {
                       <option value="CIUDADANO">CIUDADANO</option>
                       <option value="ADMIN">ADMIN</option>
                       <option value="GESTOR">GESTOR</option>
-                      <option value="SUPERVISOR">SUPERVISOR</option>
+                      <option value="ATENCION_AL_USUARIO">ATENCION AL USUARIO</option>
                     </select>
                   </td>
                 )}

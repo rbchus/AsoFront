@@ -1,24 +1,17 @@
 import { useEffect, useState } from "react";
-import { getMunicipios } from "../../services/municipiosService";
 
-export default function SelectMunicipio({selectId}) {
-  const [municipios, setMunicipios] = useState([]);
+
+export default function SelectMunicipio({municipiosList, selectId}) {
+ 
   const [selected, setSelected] = useState("");
 
-  useEffect(() => {
-     const fetchMunicipios = async () => {
-       const res = await getMunicipios();
-       //console.log("%c🧑‍💼 Municipios:", "color: red;", res);
-       setMunicipios(res.data);
-     };
-     fetchMunicipios();
-   }, []);
+ 
 
 
     const handleChange = (e) => {
     const value = e.target.value;
     setSelected(value);
-    const tipo = municipios.find((t) => t.id === Number(value));
+    const tipo = municipiosList.find((t) => t.id === Number(value));
      selectId(tipo.id)
     //console.log("%c✅ Municipio seleccionado:", "color: green;", tipo);
   };
@@ -34,7 +27,7 @@ export default function SelectMunicipio({selectId}) {
         onChange={handleChange}
       >
         <option value="">Seleccione...</option>
-        {municipios.map((t) => (
+        {municipiosList.map((t) => (
           <option key={t.id} value={t.id}>
             {t.nombre}
           </option>

@@ -119,10 +119,10 @@ export default function TramiteSelector() {
   const generarJSON = async () => {
     setCargando(true);
     const jsonFinal = {
-      estado: "EN PROCESO",
+      estado: "RADICADO",
       tramiteRelacionId: relacionId,
       solicitanteId: usuario.id,
-      gestorAsignadoId: null,
+      //gestorAsignadoId: null,
       razones: razon,
       solicitanteTipoId: solicitanteTipo,
       inmuebles: inmueble,
@@ -134,7 +134,7 @@ export default function TramiteSelector() {
       })),
       trazabilidades: [
         {
-          estado: "EN PROCESO",
+          estado: "RADICADO",
           observacion: "POR EL USUARUO: " + razon,
         },
       ],
