@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   getGestores,
-  actualizarGestorMunicipios,
   actualizarGestorMunicipio,
 } from "../services/tramitesService";
 import { getMunicipios } from "../services/municipiosService";
@@ -62,10 +61,7 @@ export default function AsignarGestorMunicipio() {
     setLoading(true);
 
     // 🔹 Payload según tu endpoint
-    const payload = {
-      gestorAsignadoId: parseInt(nuevoGestorId),
-      observacion: "Asignación masiva de trámites de este municipio al gestor.",
-    };
+    
    
     const payloadMun = {
       gestorAsignadoId: parseInt(nuevoGestorId),
@@ -74,11 +70,11 @@ export default function AsignarGestorMunicipio() {
    
     
 
-    await actualizarGestorMunicipio(municipio.id, payloadMun);
+      const res =  await actualizarGestorMunicipio(municipio.id, payloadMun);
 
 
     // 🔹 Llamada a tu servicio
-    const res = await actualizarGestorMunicipios(municipio.id, payload);
+
     //console.log("✅ Resultado:", res);
     // 🔹 Mostrar mensaje del backend
     if (res.success) {
