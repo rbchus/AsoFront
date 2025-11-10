@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTramitesRelacion } from "../../services/tramitesRelacionService";
+import { getGestores } from "../../services/tramitesService";
 import FileUploader from "./FileUploader";
 import InmuebleForm from "./InmuebleForm";
 import TitularForm from "./TitularForm";
@@ -20,13 +21,14 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function TramiteSelector() {
   const { usuario } = useAuth();
-
+  const [gestores, setGestores] = useState([]);
   const [archivos, setArchivos] = useState([]);
   const [tramites, setTramites] = useState([]);
   const [tipoTramite, setTipoTramite] = useState("");
   const [subTramite, setSubTramite] = useState("");
   const [relacionId, setRelacionId] = useState(null);
   const [solicitanteTipo, setSolicitanteTipo] = useState(null);
+  const [gestorAsignado, setGestorAsignado] = useState(null);
   const [titulares, setTitulares] = useState([]);
   const [razon, setRazon] = useState("");
   const [inmueble, setInmueble] = useState([]);
@@ -35,13 +37,30 @@ export default function TramiteSelector() {
 
   const maxLength = 250;
 
+  const reloadPage = () => {
+    window.location.reload();
+  };
+
   useEffect(() => {
     setCargando(true);
+    const fetchGestores = async () => {
+      try {
+        const res = await getGestores();
+        const otrosGestores = (res.data || []).filter(
+          (g) => g.id_usuario !== usuario?.id_usuario
+        );
+        setGestores(otrosGestores);
+      } catch (err) {
+        console.error("❌ Error al cargar gestores:", err);
+      }
+    };
+
     const fetchData = async () => {
       const res = await getTramitesRelacion();
       setTramites(res.data);
-     setCargando(false)
+      setCargando(false);
     };
+    fetchGestores();
     fetchData();
   }, []);
 
@@ -68,14 +87,14 @@ export default function TramiteSelector() {
     if (subTramiteSeleccionado) {
       //console.log("📄 SubTrámite Seleccionado:");
       //console.log(`ID: ${subTramiteSeleccionado.id}, Nombre: ${subTramiteSeleccionado.nombre}`);
-     // console.log(`🔗 Tramite y subTramite (tramiteRelacionId): ${relacionId}`);
-     /*  console.log(
-        "%c✅ Solicitante tipo seleccionado (solicitanteTipoId):",
-        "color: green;",
-        solicitanteTipo
-      ); */
-     // console.log("%c✅ titulares :", "color: green;", titulares);
-    //  console.log("%c✅ inmbiueble :", "color: blue;", inmueble);
+      // console.log(`🔗 Tramite y subTramite (tramiteRelacionId): ${relacionId}`);
+      /*  console.log(
+         "%c✅ Solicitante tipo seleccionado (solicitanteTipoId):",
+         "color: green;",
+         solicitanteTipo
+       ); */
+      // console.log("%c✅ titulares :", "color: green;", titulares);
+      //  console.log("%c✅ inmbiueble :", "color: blue;", inmueble);
     }
   }, [
     tramiteSeleccionado,
@@ -122,7 +141,7 @@ export default function TramiteSelector() {
       estado: "RADICADO",
       tramiteRelacionId: relacionId,
       solicitanteId: usuario.id,
-      //gestorAsignadoId: null,
+      gestorAsignadoId: gestorAsignado,
       razones: razon,
       solicitanteTipoId: solicitanteTipo,
       inmuebles: inmueble,
@@ -146,12 +165,10 @@ export default function TramiteSelector() {
     try {
       const res = await createTramite(jsonFinal);
 
-      const codigo = res.data.codigoAso; 
+      const codigo = res.data.codigoAso;
       //console.log("✅ codigoAso", codigo);
       const uploadResponse = await uploadTramiteFiles(codigo, archivos);
-       //console.log("✅ uploadResponse", uploadResponse);
-
-
+      //console.log("✅ uploadResponse", uploadResponse);
 
       //console.log("✅ Respuesta del backend:", res);
       //alert("Trámite creado correctamente 🎉");
@@ -171,16 +188,18 @@ export default function TramiteSelector() {
         msj: "Error al crear el trámite :(",
         link: null,
       });
-    }  finally {
-    setCargando(false);
-  }
+    } finally {
+      setCargando(false);
+    }
   };
 
   //.........................
 
   return (
     <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-8 mt-8 transition-all duration-300">
-     {cargando && <LoadingOverlay text="Creando tramite, por favor espere..." />}
+      {cargando && (
+        <LoadingOverlay text="Creando tramite, por favor espere..." />
+      )}
 
       <h1 className="text-2xl font-bold text-center text-gray-800 mb-8">
         Gestión de Trámites Catastrales
@@ -213,37 +232,66 @@ export default function TramiteSelector() {
         </div>
 
         {/* Subtrámite + tipo solicitante */}
-        {tipoTramite && (
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sub trámite
-              </label>
-              <select
-                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
-                value={subTramite}
-                onChange={(e) => {
-                  setSubTramite(e.target.value);
-                  setSolicitanteTipo(null);
-                  setTitulares([]);
-                }}
-              >
-                <option value="">Seleccione...</option>
-                {tramiteSeleccionado?.subtramites.map((sub) => (
-                  <option key={sub.id} value={sub.nombre}>
-                    {sub.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+      
+      {tipoTramite && (
+  <div className="grid md:grid-cols-3 gap-6">
+    {/* 🔹 Sub Trámite */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Sub trámite
+      </label>
+      <select
+        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+        value={subTramite}
+        onChange={(e) => {
+          setSubTramite(e.target.value);
+          setSolicitanteTipo(null);
+          setTitulares([]);
+        }}
+      >
+        <option value="">Seleccione...</option>
+        {tramiteSeleccionado?.subtramites.map((sub) => (
+          <option key={sub.id} value={sub.nombre}>
+            {sub.nombre}
+          </option>
+        ))}
+      </select>
+    </div>
 
-            {subTramite && (
-              <div>
-                <SelectSolicitanteTipo onSelect={setSolicitanteTipo} />
-              </div>
-            )}
-          </div>
-        )}
+    {/* 🔹 Selector de gestor asignado (solo si no es ciudadano) */}
+    {subTramite && usuario?.rol !== "CIUDADANO" && (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Gestor Asignado
+        </label>
+        <select
+          value={gestorAsignado || ""}
+          onChange={(e) => {
+  const value = e.target.value;
+  setGestorAsignado(value === "NINGUNO" ? null : parseInt(value, 10));
+}}
+          className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Seleccionar Gestor...</option>
+          <option value="NINGUNO">NINGUNO</option>
+          {gestores.map((g) => (
+            <option key={g.id_usuario} value={g.id_usuario}>
+              {g.nombre} {g.apellido} ({g.rol})
+            </option>
+          ))}
+        </select>
+      </div>
+    )}
+
+    {/* 🔹 Tipo de solicitante */}
+    {subTramite && (
+      <div>
+        <SelectSolicitanteTipo onSelect={setSolicitanteTipo} />
+      </div>
+    )}
+  </div>
+)}
+
       </div>
 
       {/* Mostrar TitularForm */}
@@ -305,12 +353,19 @@ export default function TramiteSelector() {
 
       {solicitanteTipo && (
         <div className="mt-8 border-t pt-6 animate-fadeIn">
-          {/* 🔹 Botón para generar JSON */}
-          <div className="mt-10 text-center">
+          {/* 🔹 Botones de acción */}
+          <div className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4 text-center">
+            <button
+              onClick={reloadPage}
+              className="w-full sm:w-auto px-8 py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700 transition"
+            >
+              Cancelar
+            </button>
+
             <button
               disabled={!puedeEnviar}
               onClick={generarJSON}
-              className={`px-8 py-3 rounded-lg font-semibold text-white transition ${
+              className={`w-full sm:w-auto px-8 py-3 rounded-lg font-semibold text-white transition ${
                 puedeEnviar
                   ? "bg-blue-600 hover:bg-blue-700"
                   : "bg-gray-400 cursor-not-allowed"
@@ -318,12 +373,13 @@ export default function TramiteSelector() {
             >
               Crear Trámite
             </button>
-            {!puedeEnviar && (
-              <p className="text-sm text-gray-600 mt-2">
-                ⚠️ Complete los campos mínimos para habilitar el botón.
-              </p>
-            )}
           </div>
+
+          {!puedeEnviar && (
+            <p className="text-sm text-gray-600 mt-3 text-center">
+              ⚠️ Complete los campos mínimos para habilitar el botón.
+            </p>
+          )}
         </div>
       )}
 

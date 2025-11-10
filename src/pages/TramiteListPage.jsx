@@ -3,7 +3,7 @@ import { getTramites } from "../services/tramitesService";
 import { AnimatePresence } from "framer-motion";
 import TramiteDetalle from "./TramiteDetalle";
 import TramitesEstadisticas from "./TramitesEstadisticas";
-import { Eye, BarChart3 } from "lucide-react";
+import { Eye, BarChart3, RotateCw } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import LoadingOverlay from "../components/LoadingOverlay";
 
@@ -24,13 +24,18 @@ export default function TramiteLista() {
   const [porPagina] = useState(5);
   const [tramiteSeleccionado, setTramiteSeleccionado] = useState(null);
   const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
-   const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(true);
+ 
 
   // 🔹 Cargar datos
   const fetchData = async () => {
     const res = await getTramites();
     setTramites(res.data || []);
-    setCargando(false)
+    setCargando(false);
+  };
+
+  const reloadPage = () => {
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -62,7 +67,7 @@ export default function TramiteLista() {
   );
 
   // 🔹 Filtrado principal
-    // 🔹 Filtrado principal
+  // 🔹 Filtrado principal
   const tramitesFiltrados = useMemo(() => {
     return tramites.filter((t) => {
       // 🚫 Si el usuario es GESTOR, ocultar trámites FINALIZADOS
@@ -106,8 +111,6 @@ export default function TramiteLista() {
     usuario, // 👈 importante para re-evaluar al cambiar de usuario
   ]);
 
-  
-
   // 🔹 Paginación
   const indiceInicial = (paginaActual - 1) * porPagina;
   const tramitesPagina = tramitesFiltrados.slice(
@@ -124,7 +127,9 @@ export default function TramiteLista() {
 
   return (
     <div className="p-6 w-full max-w-7xl mx-auto bg-white mt-10 rounded-2xl shadow-md relative">
-    {cargando && <LoadingOverlay text="Cargando Trámites, por favor espere..." />}
+      {cargando && (
+        <LoadingOverlay text="Cargando Trámites, por favor espere..." />
+      )}
       {/* 🔹 Filtros */}
       <div className="flex flex-col">
         {/* ID del Trámite */}
@@ -228,6 +233,20 @@ export default function TramiteLista() {
         <div className="grid grid-cols-6 gap-3 mb-4 text-sm w-full">
           {/* Cabecera: ocupa 5 columnas */}
           <div className="col-span-5 flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+           
+           
+
+ <div className="col-span-1 flex flex-col">
+                <button
+                  onClick={reloadPage}
+                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm"
+                >
+                  <RotateCw className="w-5 h-5" />
+                  Recargar
+                </button>
+              </div>
+
+
             {/* Botón estadísticas a la izquierda */}
             {usuario?.rol !== "CIUDADANO" && (
               <div className="col-span-1 flex flex-col">

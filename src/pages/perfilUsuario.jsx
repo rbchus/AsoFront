@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { changePassword } from "../services/authService";
-import { Lock, User } from "lucide-react";
+import { Lock, User, Eye, EyeOff } from "lucide-react";
 
 export default function PerfilUsuario() {
   const { usuario } = useAuth();
@@ -9,10 +9,13 @@ export default function PerfilUsuario() {
   const [confirmarPassword, setConfirmarPassword] = useState("");
   const [msg, setMsg] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
 
   const validarPassword = (pwd) => {
-    // Debe tener al menos 6 caracteres, incluir letras y números
-    const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    // ✅ Mínimo 6 caracteres, debe incluir letras y números
+    // y puede contener caracteres especiales comunes
+    const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d_\-*\/#%&!]{6,}$/;
     return regex.test(pwd);
   };
 
@@ -26,14 +29,15 @@ export default function PerfilUsuario() {
     }
 
     if (!validarPassword(password)) {
-      setMsg("⚠️ La contraseña debe tener al menos 6 caracteres, letras y números.");
+      setMsg(
+        "⚠️ La contraseña debe tener al menos 6 caracteres, incluir letras, números y puede contener símbolos (_ * / # % & !)."
+      );
       return;
     }
 
     setLoading(true);
     try {
-       const objeto = { newPass: password };
-       // console.log(`cmbiar al pass ${objeto}`);
+      const objeto = { newPass: password };
       await changePassword(objeto);
       setMsg("✅ Contraseña actualizada correctamente.");
       setPassword("");
@@ -77,12 +81,24 @@ export default function PerfilUsuario() {
         {/* Información del usuario */}
         <div className="space-y-4 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <p><strong>🪪 Tipo de Documento:</strong> {usuario?.tipoDocumento}</p>
-            <p><strong>🔢 Número:</strong> {usuario?.numeroDocumento}</p>
-            <p><strong>👤 Nombre:</strong> {usuario?.nombre}</p>
-            <p><strong>📞 Teléfono:</strong> {usuario?.telefono}</p>
-            <p><strong>📧 Correo:</strong> {usuario?.correo}</p>
-            <p><strong>🎭 Rol:</strong> {usuario?.rol}</p>
+            <p>
+              <strong>🪪 Tipo de Documento:</strong> {usuario?.tipoDocumento}
+            </p>
+            <p>
+              <strong>🔢 Número:</strong> {usuario?.numeroDocumento}
+            </p>
+            <p>
+              <strong>👤 Nombre:</strong> {usuario?.nombre}
+            </p>
+            <p>
+              <strong>📞 Teléfono:</strong> {usuario?.telefono}
+            </p>
+            <p>
+              <strong>📧 Correo:</strong> {usuario?.correo}
+            </p>
+            <p>
+              <strong>🎭 Rol:</strong> {usuario?.rol}
+            </p>
           </div>
         </div>
 
@@ -92,23 +108,51 @@ export default function PerfilUsuario() {
             <Lock className="w-5 h-5 text-emerald-600" /> Cambiar Contraseña
           </h3>
 
-          <input
-            type="password"
-            placeholder="Nueva contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-400 outline-none"
-          />
+          {/* Campo: Nueva contraseña */}
+          <div className="relative">
+            <input
+              type={mostrarPassword ? "text" : "password"}
+              placeholder="Nueva contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-lg p-2 pr-10 focus:ring-2 focus:ring-emerald-400 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarPassword(!mostrarPassword)}
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-emerald-600"
+            >
+              {mostrarPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
 
-          <input
-            type="password"
-            placeholder="Confirmar nueva contraseña"
-            value={confirmarPassword}
-            onChange={(e) => setConfirmarPassword(e.target.value)}
-            required
-            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-400 outline-none"
-          />
+          {/* Campo: Confirmar contraseña */}
+          <div className="relative">
+            <input
+              type={mostrarConfirmar ? "text" : "password"}
+              placeholder="Confirmar nueva contraseña"
+              value={confirmarPassword}
+              onChange={(e) => setConfirmarPassword(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-lg p-2 pr-10 focus:ring-2 focus:ring-emerald-400 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarConfirmar(!mostrarConfirmar)}
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-emerald-600"
+            >
+              {mostrarConfirmar ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
 
           <button
             type="submit"
@@ -123,7 +167,11 @@ export default function PerfilUsuario() {
           </button>
 
           <p className="text-xs text-gray-500 text-center mt-2">
-            La contraseña debe tener al menos 6 caracteres, incluyendo letras y números.
+            La contraseña debe tener al menos 6 caracteres, incluir letras y
+            números, y puede contener símbolos como: <br />
+            <span className="font-mono text-emerald-700">
+              _ * / # % & !
+            </span>
           </p>
         </form>
       </div>
