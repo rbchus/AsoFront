@@ -111,12 +111,10 @@ export default function TrazabilidadCard({ tramiteId, onClose }) {
                   {usuario?.rol !== "CIUDADANO" && (
                   <div className="text-xs text-gray-600">
                     <p>
-                      <strong>Quien Asigna:</strong> {item.usuario?.nombre} (
-                      {item.usuario?.correo})
+                      <strong>Quien Asigna:</strong> {item.usuario?.nombre} 
                     </p>
                     <p>
-                      <strong>Asignado A:</strong> {item.gestor?.nombre} (
-                      {item.gestor?.correo})
+                      <strong>Asignado A:</strong> {item.gestor?.nombre} 
                     </p>
                   </div>
                   )}

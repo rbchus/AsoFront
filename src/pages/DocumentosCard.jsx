@@ -21,7 +21,11 @@ export default function DocumentosCard({ cod, docs = [], onClose }) {
   // 🔹 Filtrar documentos según rol
   const documentosFiltrados =
     usuario?.rol === "CIUDADANO"
-      ? docs.filter((doc) => doc.nombre_archivo.startsWith("CIUDADANO_"))
+      ? docs.filter((doc) =>
+          ["CIUDADANO_", "ATENCION_AL_USUARIO_", "ADMIN_"].some((prefijo) =>
+            doc.nombre_archivo.startsWith(prefijo)
+          )
+        )
       : docs;
 
   // 🔹 Estado para la paginación
@@ -68,22 +72,18 @@ export default function DocumentosCard({ cod, docs = [], onClose }) {
     }
   };
 
-  // 🔹 Función para forzar descarga
+  // 🔹 Función para forzar descarga individual
   const handleDownload = async (nombre) => {
     try {
       const url = `${basePHAT}/dataset/${cod}/${nombre}`;
       const res = await fetch(url);
 
-      if (!res.ok) {
-        // 404, 403, etc.
-        throw new Error(`HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const blob = await res.blob();
       saveAs(blob, nombre);
     } catch (err) {
       console.error("Error descargando archivo:", nombre, err);
-      // Mensaje al usuario (puedes reemplazar por tu sistema de toasts)
       alert(
         `No se pudo descargar "${nombre}". Puede que el archivo no exista o hubo un error en el servidor.`
       );
@@ -114,16 +114,13 @@ export default function DocumentosCard({ cod, docs = [], onClose }) {
       }
     }
 
-    // Si no hubo archivos válidos
     if (Object.keys(zip.files).length === 0) {
-      alert(
-        "No se pudieron descargar los archivos. Verifica que existan en el servidor."
-      );
+      alert("No se pudieron descargar los archivos.");
       return;
     }
 
     const contenido = await zip.generateAsync({ type: "blob" });
-    saveAs(contenido, "documentos.zip");
+    saveAs(contenido, `documentos_${cod}.zip`);
 
     if (failed.length) {
       alert(
@@ -153,15 +150,13 @@ export default function DocumentosCard({ cod, docs = [], onClose }) {
       >
         {/* 🔹 Header */}
         <div className="flex justify-between items-center mb-4 border-b pb-2">
-          {usuario?.rol !== "CIUDADANO" && documentosFiltrados.length > 1 && (
-            <div className="flex justify-end mb-3">
-              <button
-                onClick={descargarZip}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-              >
-                Descargar todos en ZIP
-              </button>
-            </div>
+          {documentosFiltrados.length > 1 && (
+            <button
+              onClick={descargarZip}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            >
+              Descargar todos en ZIP
+            </button>
           )}
           <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
             📂 Documentos del Trámite
@@ -216,7 +211,7 @@ export default function DocumentosCard({ cod, docs = [], onClose }) {
               ))}
             </div>
 
-            {/* 🔹 Controles de paginación */}
+            {/* 🔹 Paginación */}
             {totalPaginas > 1 && (
               <div className="flex justify-center items-center mt-4 gap-2">
                 <button

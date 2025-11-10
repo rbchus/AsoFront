@@ -16,6 +16,9 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
   const [nuevoGestor, setNuevoGestor] = useState(
     tramite.gestorAsignado?.id_usuario || ""
   );
+  const [nuevoGestorAuxiliar, setNuevoGestorAuxiliar] = useState(
+    tramite.gestorAuxiliar?.id_usuario || ""
+  );
   const [observacion, setObservacion] = useState("");
   const [archivos, setArchivos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +86,11 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
           ? tramite.gestorAsignado?.id_usuario || null
           : nuevoGestor
           ? parseInt(nuevoGestor)
+          : null,
+        gestorAuxiliarId: esCiudadano
+          ? tramite.gestorAuxiliar?.id_usuario || null
+          : nuevoGestorAuxiliar
+          ? parseInt(nuevoGestorAuxiliar)
           : null,
         observacion,
         usuarioLogueado: {
@@ -219,7 +227,28 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
                   <option value="">Seleccionar Gestor</option>
                   {gestores.map((g) => (
                     <option key={g.id_usuario} value={g.id_usuario}>
-                      {g.rol} {g.nombre} ({g.correo})
+                      {g.rol} {g.nombre} 
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+              {/* Gestor */}
+            {!esCiudadano && (
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Gestor Auxiliar
+                </label>
+                <select
+                  value={nuevoGestorAuxiliar}
+                  onChange={(e) => setNuevoGestorAuxiliar(e.target.value)}
+                  className="w-full border rounded-lg p-2"
+                >
+                  <option value={0}>Seleccionar Gestor</option>
+                  {gestores.map((g) => (
+                    <option key={g.id_usuario} value={g.id_usuario}>
+                      {g.rol} {g.nombre} 
                     </option>
                   ))}
                 </select>
