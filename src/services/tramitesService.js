@@ -230,3 +230,26 @@ export const actualizarGestorMunicipio = async (id, tramiteData) => {
   }
 };
 
+export const actualizarInmuebleTramite = async (id, inmuebleData) => {
+  try {
+    const response = await apiClient.put(`/inmuebles/${id}`, inmuebleData);
+   // console.log("✅ Trámite actualizado", response.data);
+
+    return {
+      success: true,
+      message: "✅ Inmueble  Editado correctamente",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("❌ Error al editar  Inmueble:", error);
+    throw {
+      success: false,
+      message:  
+        error.response?.data?.message ||
+        "Error al editar  inmueble",
+      statusCode: error.response?.status || 500,
+    };
+  }
+};
+
+
