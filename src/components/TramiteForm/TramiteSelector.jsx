@@ -189,7 +189,7 @@ export default function TramiteSelector() {
         link: null,
       });
     } finally {
-      setCargando(false);
+     setCargando(false);
     }
   };
 
@@ -232,66 +232,67 @@ export default function TramiteSelector() {
         </div>
 
         {/* Subtrámite + tipo solicitante */}
-      
-      {tipoTramite && (
-  <div className="grid md:grid-cols-3 gap-6">
-    {/* 🔹 Sub Trámite */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Sub trámite
-      </label>
-      <select
-        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
-        value={subTramite}
-        onChange={(e) => {
-          setSubTramite(e.target.value);
-          setSolicitanteTipo(null);
-          setTitulares([]);
-        }}
-      >
-        <option value="">Seleccione...</option>
-        {tramiteSeleccionado?.subtramites.map((sub) => (
-          <option key={sub.id} value={sub.nombre}>
-            {sub.nombre}
-          </option>
-        ))}
-      </select>
-    </div>
 
-    {/* 🔹 Selector de gestor asignado (solo si no es ciudadano) */}
-    {subTramite && usuario?.rol !== "CIUDADANO" && (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Gestor Asignado
-        </label>
-        <select
-          value={gestorAsignado || ""}
-          onChange={(e) => {
-  const value = e.target.value;
-  setGestorAsignado(value === "NINGUNO" ? null : parseInt(value, 10));
-}}
-          className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Seleccionar Gestor...</option>
-          <option value="NINGUNO">NINGUNO</option>
-          {gestores.map((g) => (
-            <option key={g.id_usuario} value={g.id_usuario}>
-              {g.nombre} {g.apellido} ({g.rol})
-            </option>
-          ))}
-        </select>
-      </div>
-    )}
+        {tipoTramite && (
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* 🔹 Sub Trámite */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sub trámite
+              </label>
+              <select
+                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+                value={subTramite}
+                onChange={(e) => {
+                  setSubTramite(e.target.value);
+                  setSolicitanteTipo(null);
+                  setTitulares([]);
+                }}
+              >
+                <option value="">Seleccione...</option>
+                {tramiteSeleccionado?.subtramites.map((sub) => (
+                  <option key={sub.id} value={sub.nombre}>
+                    {sub.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-    {/* 🔹 Tipo de solicitante */}
-    {subTramite && (
-      <div>
-        <SelectSolicitanteTipo onSelect={setSolicitanteTipo} />
-      </div>
-    )}
-  </div>
-)}
+            {/* 🔹 Selector de gestor asignado (solo si no es ciudadano) */}
+            {subTramite && usuario?.rol !== "CIUDADANO" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gestor Asignado
+                </label>
+                <select
+                  value={gestorAsignado || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setGestorAsignado(
+                      value === "NINGUNO" ? null : parseInt(value, 10)
+                    );
+                  }}
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Seleccionar Gestor...</option>
+                  <option value="NINGUNO">NINGUNO</option>
+                  {gestores.map((g) => (
+                    <option key={g.id_usuario} value={g.id_usuario}>
+                      {g.nombre} {g.apellido} ({g.rol})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
+            {/* 🔹 Tipo de solicitante */}
+            {subTramite && (
+              <div>
+                <SelectSolicitanteTipo onSelect={setSolicitanteTipo} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Mostrar TitularForm */}

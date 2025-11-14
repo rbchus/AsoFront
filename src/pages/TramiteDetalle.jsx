@@ -34,15 +34,12 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
   console.log("🧩 nuevoInmueble actualizado:", nuevoInmueble);
 }, [nuevoInmueble]); */
 
-
-
-useEffect(() => {
-  if (msg) {
-    const timer = setTimeout(() => setMsg(null), 3000);
-    return () => clearTimeout(timer);
-  }
-}, [msg]);
-
+  useEffect(() => {
+    if (msg) {
+      const timer = setTimeout(() => setMsg(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [msg]);
 
   //console.log (tramiteLocal)
   if (!tramiteLocal) return null;
@@ -85,7 +82,7 @@ useEffect(() => {
 
     //console.log("✅ Enviando actualización de inmueble...");
     //console.log("🆔 ID del inmueble:", inmuebleId);
-   // console.log("📦 Payload:", payload);
+    // console.log("📦 Payload:", payload);
 
     try {
       const res = await actualizarInmuebleTramite(inmuebleId, payload);
@@ -186,9 +183,19 @@ useEffect(() => {
           <div className="mt-6">
             {/* Línea 1: título + botón editar */}
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-lg font-semibold text-gray-800">
+              <h4 className="flex-1 text-lg font-semibold text-gray-800 ">
                 Datos del Inmueble
               </h4>
+
+              <p className="flex-1">
+                <strong>Tipo suelo:</strong>{" "}
+                {tramiteLocal.inmuebles?.[0]?.tipo || "-"}
+              </p>
+
+              <p className="flex-1">
+                <strong>Municipio:</strong>{" "}
+                {tramiteLocal.inmuebles?.[0]?.municipio?.nombre || "-"}
+              </p>
 
               {msg && (
                 <p
@@ -218,14 +225,6 @@ useEffect(() => {
 
             {/* Línea 2: datos del inmueble */}
             <div className="flex justify-between text-sm text-gray-700 mt-2">
-              <p className="flex-1">
-                <strong>Municipio:</strong>{" "}
-                {tramiteLocal.inmuebles?.[0]?.municipio?.nombre || "-"}
-              </p>
-              <p className="flex-1">
-                <strong>Tipo suelo:</strong>{" "}
-                {tramiteLocal.inmuebles?.[0]?.tipo || "-"}
-              </p>
               <p className="flex-1">
                 <strong>Ficha Catastral:</strong>{" "}
                 {tramiteLocal.inmuebles?.[0]?.ficha || "Sin asignar"}
