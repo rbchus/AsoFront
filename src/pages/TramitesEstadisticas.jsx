@@ -52,6 +52,8 @@ export default function TramitesEstadisticas({
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
+  //console.log(tramites)
+
   const obtenerGestor = (t) =>
     t.gestorAsignado?.nombre ||
     t.gestorAsignado?.name ||
@@ -253,19 +255,96 @@ export default function TramitesEstadisticas({
   }));
   agregarHoja("Gestor_Por_Estado", completarColumnas(dataGestorEstado, estadosUnicos));
 
-  // === 5️⃣ Municipios vs Gestores — sin totales
-  const muniGestor = {};
-  tramitesFiltrados.forEach((t) => {
-    const muni = obtenerMunicipio(t);
-    const g = obtenerGestor(t);
-    if (!muniGestor[muni]) muniGestor[muni] = {};
-    muniGestor[muni][g] = (muniGestor[muni][g] || 0) + 1;
+// === 5️⃣ Municipios vs Gestores — EXCEL (con gestor auxiliar) ===
+
+// 1. Gestores únicos (principal o auxiliar)
+let gestoresUnicos = [
+  ...new Set([
+    ...tramitesFiltrados.map((t) =>
+      t.gestorAsignado ? t.gestorAsignado.nombre : "Sin gestor"
+    ),
+    ...tramitesFiltrados.map((t) =>
+      t.gestorAuxiliar ? t.gestorAuxiliar.nombre : null
+    ),
+  ]),
+].filter(Boolean);
+
+// Agregar “Sin gestor”
+if (!gestoresUnicos.includes("Sin gestor")) gestoresUnicos.push("Sin gestor");
+
+// 2. Municipios únicos
+let municipiosUnicos = [
+  ...new Set(
+    tramitesFiltrados.map((t) =>
+      t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio"
+    )
+  ),
+];
+
+// 3. Mapa: Gestor → Municipio → { principal, auxiliar }
+const gestorMunicipioMap = {};
+
+gestoresUnicos.forEach((g) => {
+  gestorMunicipioMap[g] = {};
+  municipiosUnicos.forEach((m) => {
+    gestorMunicipioMap[g][m] = { principal: 0, auxiliar: 0 };
   });
-  const dataMuniGestor = Object.entries(muniGestor).map(([m, gs]) => ({
-    Municipio: m,
-    ...gs,
-  }));
-  agregarHoja("Muni_vs_Gestor", dataMuniGestor);
+});
+
+tramitesFiltrados.forEach((t) => {
+  const municipio =
+    t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio";
+
+  // Principal
+  const gPrincipal = t.gestorAsignado
+    ? t.gestorAsignado.nombre
+    : "Sin gestor";
+
+  gestorMunicipioMap[gPrincipal][municipio].principal++;
+
+  // Auxiliar
+  if (t.gestorAuxiliar) {
+    const gAux = t.gestorAuxiliar.nombre;
+
+    if (!gestorMunicipioMap[gAux])
+      gestorMunicipioMap[gAux] = {};
+
+    if (!gestorMunicipioMap[gAux][municipio])
+      gestorMunicipioMap[gAux][municipio] = { principal: 0, auxiliar: 0 };
+
+    gestorMunicipioMap[gAux][municipio].auxiliar++;
+  }
+});
+
+// 4. Convertir estructura a tabla Excel
+const dataMuniGestor = gestoresUnicos.map((gestor) => {
+  const fila = { Gestor: gestor };
+
+  municipiosUnicos.forEach((m) => {
+    const { principal, auxiliar } = gestorMunicipioMap[gestor][m];
+
+    if (principal > 0 && auxiliar > 0)
+      fila[m] = `${principal} (${auxiliar})`;
+
+    else if (principal > 0)
+      fila[m] = `${principal}`;
+
+    else if (auxiliar > 0)
+      fila[m] = `(${auxiliar})`;
+
+    else fila[m] = "0";
+  });
+
+  return fila;
+});
+
+agregarHoja("Gestor_vs_Municipio", dataMuniGestor);
+
+// Agregar nota en hoja aparte
+agregarHoja("Notas", [
+  { Nota: "(GA) indica cantidad de trámites donde el gestor figura como Gestor Auxiliar." },
+]);
+
 
   // === GUARDAR ===
   XLSX.writeFile(libro, "Reporte_Tramites.xlsx");
@@ -437,21 +516,105 @@ export default function TramitesEstadisticas({
     completarColumnas(dataGestorEstado, estadosUnicos)
   );
 
-  // === 5️⃣ Municipios vs Gestores — sin totales
-  const muniGestor = {};
-  tramitesFiltrados.forEach((t) => {
-    const muni = obtenerMunicipio(t);
-    const g = obtenerGestor(t);
-    if (!muniGestor[muni]) muniGestor[muni] = {};
-    muniGestor[muni][g] = (muniGestor[muni][g] || 0) + 1;
+ // === 5️⃣ Municipios vs Gestores — PDF (con auxiliar) ===
+
+// 1. Gestores únicos
+let gestoresUnicos = [
+  ...new Set([
+    ...tramitesFiltrados.map((t) =>
+      t.gestorAsignado ? t.gestorAsignado.nombre : "Sin gestor"
+    ),
+    ...tramitesFiltrados.map((t) =>
+      t.gestorAuxiliar ? t.gestorAuxiliar.nombre : null
+    ),
+  ]),
+].filter(Boolean);
+
+if (!gestoresUnicos.includes("Sin gestor"))
+  gestoresUnicos.push("Sin gestor");
+
+// 2. Municipios únicos
+let municipiosUnicos = [
+  ...new Set(
+    tramitesFiltrados.map((t) =>
+      t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio"
+    )
+  ),
+];
+
+// 3. Crear mapa Gestor → Municipio → principal/auxiliar
+const gestorMunicipioMap = {};
+
+gestoresUnicos.forEach((g) => {
+  gestorMunicipioMap[g] = {};
+  municipiosUnicos.forEach((m) => {
+    gestorMunicipioMap[g][m] = { principal: 0, auxiliar: 0 };
+  });
+});
+
+tramitesFiltrados.forEach((t) => {
+  const municipio =
+    t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio";
+
+  // Principal
+  const gPrincipal = t.gestorAsignado
+    ? t.gestorAsignado.nombre
+    : "Sin gestor";
+
+  gestorMunicipioMap[gPrincipal][municipio].principal++;
+
+  // Auxiliar
+  if (t.gestorAuxiliar) {
+    const gAux = t.gestorAuxiliar.nombre;
+
+    if (!gestorMunicipioMap[gAux])
+      gestorMunicipioMap[gAux] = {};
+
+    if (!gestorMunicipioMap[gAux][municipio])
+      gestorMunicipioMap[gAux][municipio] = { principal: 0, auxiliar: 0 };
+
+    gestorMunicipioMap[gAux][municipio].auxiliar++;
+  }
+});
+
+// 4. Tabla final para PDF
+const dataMuniGestor = gestoresUnicos.map((gestor) => {
+  const fila = { Gestor: gestor };
+
+  municipiosUnicos.forEach((m) => {
+    const { principal, auxiliar } = gestorMunicipioMap[gestor][m];
+
+    if (principal > 0 && auxiliar > 0)
+      fila[m] = `${principal} (${auxiliar})`;
+
+    else if (principal > 0)
+      fila[m] = `${principal}`;
+
+    else if (auxiliar > 0)
+      fila[m] = `(${auxiliar})`;
+
+    else fila[m] = "0";
   });
 
-  const dataMuniGestor = Object.entries(muniGestor).map(([m, gs]) => ({
-    Municipio: m,
-    ...gs,
-  }));
+  return fila;
+});
 
-  addTable("Municipios vs Gestores", dataMuniGestor);
+// 5. PDF — con encabezados verticales
+addTable(
+  "Gestores vs Municipios (principal y auxiliar)",
+  dataMuniGestor,
+  {
+    headStyles: {
+      textDirection: "vertical",
+      valign: "bottom",
+    },
+  }
+);
+
+// 6. Nota final
+addTable("Nota", [
+  { Detalle: "(GA) indica cantidad de trámites donde el gestor figura como Gestor Auxiliar." },
+]);
 
   // ------------------ PIE FINAL ------------------
   addPieDePagina();
