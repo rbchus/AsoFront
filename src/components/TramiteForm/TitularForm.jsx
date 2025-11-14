@@ -69,7 +69,7 @@ export default function TitularForm({ titulares, setTitulares }) {
                 }
               >
                 <option value="">Seleccione...</option>
-                {["CC", "TI", "PA", "NIT", "RC"].map((doc) => (
+                {["CC", "CE", "PA", "NIT"].map((doc) => (
                   <option key={doc} value={doc}>
                     {doc}
                   </option>
