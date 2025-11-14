@@ -30,12 +30,15 @@ export default function MessageCard({ rta, onClose }) {
           <h3 className="text-xl font-semibold text-gray-800">
             🕓 Respuesta del sistema
           </h3>
-          <button
-            onClick={onClose}
-            className="text-red-600 hover:text-red-800 font-semibold text-lg"
-          >
-            ✖
-          </button>
+
+          {!rta.icono && (
+            <button
+              onClick={onClose}
+              className="text-red-600 hover:text-red-800 font-semibold text-lg"
+            >
+              ✖
+            </button>
+          )}
         </div>
 
         {loading ? (
