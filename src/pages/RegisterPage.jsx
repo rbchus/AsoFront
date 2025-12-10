@@ -4,6 +4,16 @@ import { register as apiRegister } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 
+// 👉 Función mejorada: permite espacios + tildes + camel case
+const formatCamelCase = (text) => {
+  return text
+    .toLowerCase()
+    .replace(/[^a-záéíóúñ\s]/gi, "") // permite letras, tildes y espacios
+    .replace(/\s{2,}/g, " ") // evita espacios dobles
+    .trimStart() // evita espacios al inicio
+    .replace(/\b\w/g, (letra) => letra.toUpperCase()); // capitaliza cada palabra
+};
+
 export default function RegisterPage() {
   const [form, setForm] = useState({
     nombre: "",
@@ -16,6 +26,7 @@ export default function RegisterPage() {
     password: "",
     confirmarPassword: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const navigate = useNavigate();
@@ -24,7 +35,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setMsg(null);
 
-    // ✅ Validaciones antes de enviar
     if (form.correo !== form.confirmarCorreo) {
       setMsg("❌ Los correos electrónicos no coinciden.");
       return;
@@ -39,39 +49,32 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    
+
     try {
-  await apiRegister({
-    nombre: form.nombre,
-    tipoDocumento: form.tipoDocumento,
-    numeroDocumento: form.numeroDocumento,
-    telefono: form.telefono,
-    correo: form.correo,
-    password: form.password,
-  });
+      await apiRegister({
+        nombre: form.nombre,
+        tipoDocumento: form.tipoDocumento,
+        numeroDocumento: form.numeroDocumento,
+        telefono: form.telefono,
+        correo: form.correo,
+        password: form.password,
+      });
 
-  setMsg("✅ Registro exitoso. Redirigiendo...");
-  setTimeout(() => navigate("/login"), 1200);
-} catch (error) {
-  console.error("❌ Error al registrar:", error);
+      setMsg("✅ Registro exitoso. Redirigiendo...");
+      setTimeout(() => navigate("/login"), 1200);
+    } catch (error) {
+      console.error("❌ Error al registrar:", error);
 
-  if (error.response?.status === 409) {
-    // ⚠️ Error específico de conflicto (correo duplicado)
-    setMsg(error.response.data.message || "Ya existe un usuario con esos datos.");
-  } else if (error.response?.status === 400) {
-    // ⚠️ Error de validación
-    setMsg("Datos inválidos, revisa el formulario.");
-  } else {
-    // ⚠️ Otros errores genéricos
-    setMsg("❌ Error al registrar, inténtalo de nuevo.");
-  }
-} finally {
-  setLoading(false);
-}
-
-
-
-
+      if (error.response?.status === 409) {
+        setMsg(error.response.data.message || "Ya existe un usuario con esos datos.");
+      } else if (error.response?.status === 400) {
+        setMsg("Datos inválidos, revisa el formulario.");
+      } else {
+        setMsg("❌ Error al registrar, inténtalo de nuevo.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,7 +103,9 @@ export default function RegisterPage() {
             <h3 className="text-lg font-semibold text-emerald-700 mb-2">
               🧍 Datos personales
             </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Nombre con Camel Case */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Nombre completo
@@ -109,10 +114,14 @@ export default function RegisterPage() {
                   type="text"
                   value={form.nombre}
                   onChange={(e) =>
-                    setForm({ ...form, nombre: e.target.value })
+                    setForm({
+                      ...form,
+                      nombre: formatCamelCase(e.target.value),
+                    })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Ej: Juan Pérez"
                 />
               </div>
@@ -127,7 +136,8 @@ export default function RegisterPage() {
                     setForm({ ...form, tipoDocumento: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                 >
                   <option value="">Seleccione...</option>
                   <option value="CC">Cédula de ciudadanía (CC)</option>
@@ -148,7 +158,8 @@ export default function RegisterPage() {
                     setForm({ ...form, numeroDocumento: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Ej: 1001234567"
                 />
               </div>
@@ -157,9 +168,8 @@ export default function RegisterPage() {
 
           {/* CONTACTO */}
           <div>
-            <h3 className="text-lg font-semibold text-emerald-700 mb-2">
-              ☎️ Contacto
-            </h3>
+            <h3 className="text-lg font-semibold text-emerald-700 mb-2">☎️ Contacto</h3>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -172,7 +182,8 @@ export default function RegisterPage() {
                     setForm({ ...form, telefono: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Ej: 3001234567"
                 />
               </div>
@@ -188,7 +199,8 @@ export default function RegisterPage() {
                     setForm({ ...form, confirmarTelefono: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Repite el número"
                 />
               </div>
@@ -204,7 +216,8 @@ export default function RegisterPage() {
                     setForm({ ...form, correo: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="correo@ejemplo.com"
                 />
               </div>
@@ -220,7 +233,8 @@ export default function RegisterPage() {
                     setForm({ ...form, confirmarCorreo: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Repite tu correo"
                 />
               </div>
@@ -229,9 +243,8 @@ export default function RegisterPage() {
 
           {/* ACCESO */}
           <div>
-            <h3 className="text-lg font-semibold text-emerald-700 mb-2">
-              🔐 Acceso
-            </h3>
+            <h3 className="text-lg font-semibold text-emerald-700 mb-2">🔐 Acceso</h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -244,8 +257,8 @@ export default function RegisterPage() {
                     setForm({ ...form, password: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
-                  placeholder="********"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                 />
               </div>
 
@@ -260,11 +273,23 @@ export default function RegisterPage() {
                     setForm({ ...form, confirmarPassword: e.target.value })
                   }
                   required
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
-                  placeholder="Repite la contraseña"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg 
+                  focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                 />
               </div>
+
+              
+
             </div>
+
+              <p className="text-xs text-gray-500 text-center mt-2">
+            La contraseña debe tener al menos 6 caracteres, incluir letras y
+            números, y puede contener símbolos como: <br />
+            <span className="font-mono text-emerald-700">
+              _ * / # % & !
+            </span>
+          </p>
+          
           </div>
 
           {/* BOTÓN */}
