@@ -75,6 +75,23 @@ export default function UsuariosListPage() {
   }
 };
 
+const formatCamelCase = (text = "") => {
+  return text
+    .toLocaleLowerCase("es-ES")                   // Baja todo respetando acentos
+    .replace(/[^a-záéíóúüñ\s]/gi, "")              // Solo letras válidas y espacios
+    .replace(/\s{2,}/g, " ")                       // Espacios dobles
+    .trim()                                        // Bordes
+    .split(" ")                                    // Separar palabras
+    .map((word) =>
+      word.charAt(0).toLocaleUpperCase("es-ES") +  // Primera letra mayúscula
+      word.slice(1).toLocaleLowerCase("es-ES")     // Resto en minúscula SIEMPRE
+    )
+    .join(" ");                                     // Unir de nuevo
+};
+
+
+
+
   return (
     <div className="p-6 w-full max-w-7xl mx-auto bg-white mt-10 rounded-2xl shadow-md relative">
       {cargando && <LoadingOverlay text="Cargando Usuarios, por favor espere..." />}
@@ -115,7 +132,7 @@ export default function UsuariosListPage() {
                 <td className="border px-3 py-2">{u.id_usuario}</td>
                 <td className="border px-3 py-2">{u.tipoDocumento}</td>
                 <td className="border px-3 py-2">{u.numeroDocumento}</td>
-                <td className="border px-3 py-2">{u.nombre}</td>
+                <td className="border px-3 py-2">{formatCamelCase(u.nombre)}</td>
                 <td className="border px-3 py-2">{u.telefono}</td>
                 <td className="border px-3 py-2">{u.correo}</td>
                 <td className="border px-3 py-2">{u.rol}</td>

@@ -3,6 +3,43 @@ import { createUserFromAdmin as apiRegister } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 
+// 👉 Función para formatear nombres (Capital Case inteligente)
+const formatNombre = (texto) => {
+  // detectar si el usuario dejó un espacio al final
+  const tieneEspacioFinal = texto.endsWith(" ");
+
+  const palabrasMinusculas = [
+    "de", "del", "la", "las", "los", "y",
+    "da", "das", "do", "dos",
+    "van", "von",
+    "di", "du",
+    "el"
+  ];
+
+  const palabras = texto
+    .trim()
+    .toLowerCase()
+    .split(/\s+/) // acepta múltiples espacios
+    .map((palabra, index) => {
+      if (index === 0) {
+        return palabra.charAt(0).toUpperCase() + palabra.slice(1);
+      }
+      if (palabrasMinusculas.includes(palabra)) {
+        return palabra;
+      }
+      return palabra.charAt(0).toUpperCase() + palabra.slice(1);
+    });
+
+  // reconstruir el texto
+  let resultado = palabras.join(" ");
+
+  // restaurar espacio final si el usuario lo escribió
+  if (tieneEspacioFinal) resultado += " ";
+
+  return resultado;
+};
+
+
 export default function RegisterAdminPage() {
   const [form, setForm] = useState({
     nombre: "",
@@ -14,6 +51,7 @@ export default function RegisterAdminPage() {
     confirmarCorreo: "",
     rol: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const navigate = useNavigate();
@@ -43,7 +81,7 @@ export default function RegisterAdminPage() {
       });
 
       setMsg("✅ Usuario registrado correctamente.");
-      setTimeout(() => navigate("/usuarios"), 1500);
+      setTimeout(() => navigate("/dashboard/admin/usuarios"), 500);
     } catch (error) {
       console.error("❌ Error al registrar:", error);
 
@@ -87,7 +125,9 @@ export default function RegisterAdminPage() {
             <h3 className="text-lg font-semibold text-emerald-700 mb-2">
               🧍 Datos personales
             </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* NOMBRE CON CAPITAL CASE */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Nombre completo
@@ -95,7 +135,9 @@ export default function RegisterAdminPage() {
                 <input
                   type="text"
                   value={form.nombre}
-                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, nombre: formatNombre(e.target.value) })
+                  }
                   required
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Ej: Ana Gómez"
@@ -145,6 +187,7 @@ export default function RegisterAdminPage() {
             <h3 className="text-lg font-semibold text-emerald-700 mb-2">
               ☎️ Contacto
             </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -153,7 +196,9 @@ export default function RegisterAdminPage() {
                 <input
                   type="tel"
                   value={form.telefono}
-                  onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, telefono: e.target.value })
+                  }
                   required
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
                   placeholder="Ej: 3001234567"
@@ -168,7 +213,10 @@ export default function RegisterAdminPage() {
                   type="tel"
                   value={form.confirmarTelefono}
                   onChange={(e) =>
-                    setForm({ ...form, confirmarTelefono: e.target.value })
+                    setForm({
+                      ...form,
+                      confirmarTelefono: e.target.value,
+                    })
                   }
                   required
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none"
