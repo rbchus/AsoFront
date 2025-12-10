@@ -155,473 +155,476 @@ export default function TramitesEstadisticas({
   }, [tramitesFiltrados]);
 
   // === 📗 EXCEL ===
-  
+
   const exportarExcel = async () => {
-  const libro = XLSX.utils.book_new();
+    const libro = XLSX.utils.book_new();
 
-  // === ENCABEZADO ===
-  const encabezado = [
-    ["Sistema de Trámites Catastrales"],
-    ["Asociación de Municipios del Catatumbo – Plataforma de gestión y seguimiento"],
-    ["Reporte General de Trámites"],
-    [""],
-    ["Generado el:", new Date().toLocaleString("es-CO")],
-  ];
-  const hojaPortada = XLSX.utils.aoa_to_sheet(encabezado);
-  XLSX.utils.book_append_sheet(libro, hojaPortada, "Encabezado");
+    // === ENCABEZADO ===
+    const encabezado = [
+      ["Sistema de Trámites Catastrales"],
+      [
+        "Asociación de Municipios del Catatumbo – Plataforma de gestión y seguimiento",
+      ],
+      ["Reporte General de Trámites"],
+      [""],
+      ["Generado el:", new Date().toLocaleString("es-CO")],
+    ];
+    const hojaPortada = XLSX.utils.aoa_to_sheet(encabezado);
+    XLSX.utils.book_append_sheet(libro, hojaPortada, "Encabezado");
 
-  // === UTILIDADES ===
-  const agregarHoja = (nombre, datos) => {
-    if (!datos.length) return;
-    const nombreHoja = nombre.length > 31 ? nombre.slice(0, 31) : nombre; // <-- previene el error
-    const hoja = XLSX.utils.json_to_sheet(datos);
+    // === UTILIDADES ===
+    const agregarHoja = (nombre, datos) => {
+      if (!datos.length) return;
+      const nombreHoja = nombre.length > 31 ? nombre.slice(0, 31) : nombre; // <-- previene el error
+      const hoja = XLSX.utils.json_to_sheet(datos);
 
-    // ajustar ancho de columnas
-    const columnas = Object.keys(datos[0]);
-    hoja["!cols"] = columnas.map((col) => ({
-      wch: Math.max(col.length + 2, 12),
-    }));
+      // ajustar ancho de columnas
+      const columnas = Object.keys(datos[0]);
+      hoja["!cols"] = columnas.map((col) => ({
+        wch: Math.max(col.length + 2, 12),
+      }));
 
-    XLSX.utils.book_append_sheet(libro, hoja, nombreHoja);
-  };
+      XLSX.utils.book_append_sheet(libro, hoja, nombreHoja);
+    };
 
-  const completarColumnas = (datos, estados) =>
-    datos.map((d) => {
-      const fila = { ...d };
-      estados.forEach((e) => {
-        if (fila[e] === undefined) fila[e] = 0;
+    const completarColumnas = (datos, estados) =>
+      datos.map((d) => {
+        const fila = { ...d };
+        estados.forEach((e) => {
+          if (fila[e] === undefined) fila[e] = 0;
+        });
+        return fila;
       });
+
+    const estadosUnicos = [
+      ...new Set(tramitesFiltrados.map((t) => obtenerEstado(t))),
+    ];
+
+    // === 1️⃣ Trámites por Municipio (con totales)
+    const tramitesPorMunicipio = {};
+    tramitesFiltrados.forEach((t) => {
+      const muni = obtenerMunicipio(t);
+      if (!tramitesPorMunicipio[muni]) tramitesPorMunicipio[muni] = 0;
+      tramitesPorMunicipio[muni]++;
+    });
+    const dataMunicipio = Object.entries(tramitesPorMunicipio).map(
+      ([m, total]) => ({
+        Municipio: m,
+        Total: total,
+      })
+    );
+    agregarHoja("Trámites_Municipio", dataMunicipio);
+
+    // === 2️⃣ Trámites por Municipio (por Estado) — sin totales
+    const municipiosPorEstado = {};
+    tramitesFiltrados.forEach((t) => {
+      const muni = obtenerMunicipio(t);
+      const est = obtenerEstado(t);
+      if (!municipiosPorEstado[muni]) municipiosPorEstado[muni] = {};
+      municipiosPorEstado[muni][est] =
+        (municipiosPorEstado[muni][est] || 0) + 1;
+    });
+    const dataMunicipioEstado = Object.entries(municipiosPorEstado).map(
+      ([muni, ests]) => ({
+        Municipio: muni,
+        ...ests,
+      })
+    );
+    agregarHoja(
+      "Munic_Por_Estado",
+      completarColumnas(dataMunicipioEstado, estadosUnicos)
+    );
+
+    // === 3️⃣ Trámites por Gestor (con totales)
+    const tramitesPorGestor = {};
+    tramitesFiltrados.forEach((t) => {
+      const g = obtenerGestor(t);
+      if (!tramitesPorGestor[g]) tramitesPorGestor[g] = 0;
+      tramitesPorGestor[g]++;
+    });
+    const dataGestor = Object.entries(tramitesPorGestor).map(([g, total]) => ({
+      Gestor: g,
+      Total: total,
+    }));
+    agregarHoja("Trámites_Gestor", dataGestor);
+
+    // === 4️⃣ Trámites por Gestor (por Estado) — sin totales
+    const gestorPorEstado = {};
+    tramitesFiltrados.forEach((t) => {
+      const g = obtenerGestor(t);
+      const est = obtenerEstado(t);
+      if (!gestorPorEstado[g]) gestorPorEstado[g] = {};
+      gestorPorEstado[g][est] = (gestorPorEstado[g][est] || 0) + 1;
+    });
+    const dataGestorEstado = Object.entries(gestorPorEstado).map(
+      ([g, ests]) => ({
+        Gestor: g,
+        ...ests,
+      })
+    );
+    agregarHoja(
+      "Gestor_Por_Estado",
+      completarColumnas(dataGestorEstado, estadosUnicos)
+    );
+
+    // === 5️⃣ Municipios vs Gestores — EXCEL (con gestor auxiliar) ===
+
+    // 1. Gestores únicos (principal o auxiliar)
+    let gestoresUnicos = [
+      ...new Set([
+        ...tramitesFiltrados.map((t) =>
+          t.gestorAsignado ? t.gestorAsignado.nombre : "Sin gestor"
+        ),
+        ...tramitesFiltrados.map((t) =>
+          t.gestorAuxiliar ? t.gestorAuxiliar.nombre : null
+        ),
+      ]),
+    ].filter(Boolean);
+
+    // Agregar “Sin gestor”
+    if (!gestoresUnicos.includes("Sin gestor"))
+      gestoresUnicos.push("Sin gestor");
+
+    // 2. Municipios únicos
+    let municipiosUnicos = [
+      ...new Set(
+        tramitesFiltrados.map(
+          (t) => t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio"
+        )
+      ),
+    ];
+
+    // 3. Mapa: Gestor → Municipio → { principal, auxiliar }
+    const gestorMunicipioMap = {};
+
+    gestoresUnicos.forEach((g) => {
+      gestorMunicipioMap[g] = {};
+      municipiosUnicos.forEach((m) => {
+        gestorMunicipioMap[g][m] = { principal: 0, auxiliar: 0 };
+      });
+    });
+
+    tramitesFiltrados.forEach((t) => {
+      const municipio = t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio";
+
+      // Principal
+      const gPrincipal = t.gestorAsignado
+        ? t.gestorAsignado.nombre
+        : "Sin gestor";
+
+      gestorMunicipioMap[gPrincipal][municipio].principal++;
+
+      // Auxiliar
+      if (t.gestorAuxiliar) {
+        const gAux = t.gestorAuxiliar.nombre;
+
+        if (!gestorMunicipioMap[gAux]) gestorMunicipioMap[gAux] = {};
+
+        if (!gestorMunicipioMap[gAux][municipio])
+          gestorMunicipioMap[gAux][municipio] = { principal: 0, auxiliar: 0 };
+
+        gestorMunicipioMap[gAux][municipio].auxiliar++;
+      }
+    });
+
+    // 4. Convertir estructura a tabla Excel
+    const dataMuniGestor = gestoresUnicos.map((gestor) => {
+      const fila = { Gestor: gestor };
+
+      municipiosUnicos.forEach((m) => {
+        const { principal, auxiliar } = gestorMunicipioMap[gestor][m];
+
+        if (principal > 0 && auxiliar > 0)
+          fila[m] = `${principal} (${auxiliar})`;
+        else if (principal > 0) fila[m] = `${principal}`;
+        else if (auxiliar > 0) fila[m] = `(${auxiliar})`;
+        else fila[m] = "0";
+      });
+
       return fila;
     });
 
-  const estadosUnicos = [...new Set(tramitesFiltrados.map((t) => obtenerEstado(t)))];
+    agregarHoja("Gestor_vs_Municipio", dataMuniGestor);
 
-  // === 1️⃣ Trámites por Municipio (con totales)
-  const tramitesPorMunicipio = {};
-  tramitesFiltrados.forEach((t) => {
-    const muni = obtenerMunicipio(t);
-    if (!tramitesPorMunicipio[muni]) tramitesPorMunicipio[muni] = 0;
-    tramitesPorMunicipio[muni]++;
-  });
-  const dataMunicipio = Object.entries(tramitesPorMunicipio).map(([m, total]) => ({
-    Municipio: m,
-    Total: total,
-  }));
-  agregarHoja("Trámites_Municipio", dataMunicipio);
+    // Agregar nota en hoja aparte
+    agregarHoja("Notas", [
+      {
+        Nota: "(GA) indica cantidad de trámites donde el gestor figura como Gestor Auxiliar.",
+      },
+    ]);
 
-  // === 2️⃣ Trámites por Municipio (por Estado) — sin totales
-  const municipiosPorEstado = {};
-  tramitesFiltrados.forEach((t) => {
-    const muni = obtenerMunicipio(t);
-    const est = obtenerEstado(t);
-    if (!municipiosPorEstado[muni]) municipiosPorEstado[muni] = {};
-    municipiosPorEstado[muni][est] = (municipiosPorEstado[muni][est] || 0) + 1;
-  });
-  const dataMunicipioEstado = Object.entries(municipiosPorEstado).map(
-    ([muni, ests]) => ({
-      Municipio: muni,
-      ...ests,
-    })
-  );
-  agregarHoja(
-    "Munic_Por_Estado",
-    completarColumnas(dataMunicipioEstado, estadosUnicos)
-  );
-
-  // === 3️⃣ Trámites por Gestor (con totales)
-  const tramitesPorGestor = {};
-  tramitesFiltrados.forEach((t) => {
-    const g = obtenerGestor(t);
-    if (!tramitesPorGestor[g]) tramitesPorGestor[g] = 0;
-    tramitesPorGestor[g]++;
-  });
-  const dataGestor = Object.entries(tramitesPorGestor).map(([g, total]) => ({
-    Gestor: g,
-    Total: total,
-  }));
-  agregarHoja("Trámites_Gestor", dataGestor);
-
-  // === 4️⃣ Trámites por Gestor (por Estado) — sin totales
-  const gestorPorEstado = {};
-  tramitesFiltrados.forEach((t) => {
-    const g = obtenerGestor(t);
-    const est = obtenerEstado(t);
-    if (!gestorPorEstado[g]) gestorPorEstado[g] = {};
-    gestorPorEstado[g][est] = (gestorPorEstado[g][est] || 0) + 1;
-  });
-  const dataGestorEstado = Object.entries(gestorPorEstado).map(([g, ests]) => ({
-    Gestor: g,
-    ...ests,
-  }));
-  agregarHoja("Gestor_Por_Estado", completarColumnas(dataGestorEstado, estadosUnicos));
-
-// === 5️⃣ Municipios vs Gestores — EXCEL (con gestor auxiliar) ===
-
-// 1. Gestores únicos (principal o auxiliar)
-let gestoresUnicos = [
-  ...new Set([
-    ...tramitesFiltrados.map((t) =>
-      t.gestorAsignado ? t.gestorAsignado.nombre : "Sin gestor"
-    ),
-    ...tramitesFiltrados.map((t) =>
-      t.gestorAuxiliar ? t.gestorAuxiliar.nombre : null
-    ),
-  ]),
-].filter(Boolean);
-
-// Agregar “Sin gestor”
-if (!gestoresUnicos.includes("Sin gestor")) gestoresUnicos.push("Sin gestor");
-
-// 2. Municipios únicos
-let municipiosUnicos = [
-  ...new Set(
-    tramitesFiltrados.map((t) =>
-      t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio"
-    )
-  ),
-];
-
-// 3. Mapa: Gestor → Municipio → { principal, auxiliar }
-const gestorMunicipioMap = {};
-
-gestoresUnicos.forEach((g) => {
-  gestorMunicipioMap[g] = {};
-  municipiosUnicos.forEach((m) => {
-    gestorMunicipioMap[g][m] = { principal: 0, auxiliar: 0 };
-  });
-});
-
-tramitesFiltrados.forEach((t) => {
-  const municipio =
-    t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio";
-
-  // Principal
-  const gPrincipal = t.gestorAsignado
-    ? t.gestorAsignado.nombre
-    : "Sin gestor";
-
-  gestorMunicipioMap[gPrincipal][municipio].principal++;
-
-  // Auxiliar
-  if (t.gestorAuxiliar) {
-    const gAux = t.gestorAuxiliar.nombre;
-
-    if (!gestorMunicipioMap[gAux])
-      gestorMunicipioMap[gAux] = {};
-
-    if (!gestorMunicipioMap[gAux][municipio])
-      gestorMunicipioMap[gAux][municipio] = { principal: 0, auxiliar: 0 };
-
-    gestorMunicipioMap[gAux][municipio].auxiliar++;
-  }
-});
-
-// 4. Convertir estructura a tabla Excel
-const dataMuniGestor = gestoresUnicos.map((gestor) => {
-  const fila = { Gestor: gestor };
-
-  municipiosUnicos.forEach((m) => {
-    const { principal, auxiliar } = gestorMunicipioMap[gestor][m];
-
-    if (principal > 0 && auxiliar > 0)
-      fila[m] = `${principal} (${auxiliar})`;
-
-    else if (principal > 0)
-      fila[m] = `${principal}`;
-
-    else if (auxiliar > 0)
-      fila[m] = `(${auxiliar})`;
-
-    else fila[m] = "0";
-  });
-
-  return fila;
-});
-
-agregarHoja("Gestor_vs_Municipio", dataMuniGestor);
-
-// Agregar nota en hoja aparte
-agregarHoja("Notas", [
-  { Nota: "(GA) indica cantidad de trámites donde el gestor figura como Gestor Auxiliar." },
-]);
-
-
-  // === GUARDAR ===
-  XLSX.writeFile(libro, "Reporte_Tramites.xlsx");
-};
-
+    // === GUARDAR ===
+    XLSX.writeFile(libro, "Reporte_Tramites.xlsx");
+  };
 
   // === 📄 PDF ===
 
- const exportarPDF = async () => {
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt" });
+  const exportarPDF = async () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt" });
 
-  // ------------------ LOGO INSTITUCIONAL ------------------
-  try {
-    const logoUrl = "/asomunicipios_negro.png"; // usar PNG o JPG, no SVG
-    const imgBlob = await fetch(logoUrl).then((res) => res.blob());
-    const imgData = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(imgBlob);
-    });
-
-    // Mantener proporción del logo automáticamente
-    const tempImg = new Image();
-    tempImg.src = imgData;
-    await new Promise((resolve) => (tempImg.onload = resolve));
-
-    const originalWidth = tempImg.width;
-    const originalHeight = tempImg.height;
-    const logoHeight = 45; // ajusta si quieres más grande o pequeño
-    const logoWidth = (originalWidth / originalHeight) * logoHeight;
-
-    doc.addImage(imgData, "PNG", 40, 25, logoWidth, logoHeight);
-  } catch (err) {
-    console.warn("⚠️ No se pudo cargar el logo:", err);
-  }
-
-  // ------------------ ENCABEZADO ------------------
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("Sistema de Trámites Catastrales", 140, 45);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text(
-    "Asociación de Municipios del Catatumbo – Plataforma de gestión y seguimiento",
-    140,
-    62
-  );
-  doc.setFontSize(9);
-  doc.text(`Generado el ${new Date().toLocaleString("es-CO")}`, 140, 78);
-  doc.line(40, 90, 800, 90);
-
-  let y = 110;
-
-  // ------------------ PIE DE PÁGINA ------------------
-  const addPieDePagina = () => {
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.text(
-        `Página ${i} de ${pageCount} · Sistema de Trámites Catastrales - Asomunicipios`,
-        400,
-        580,
-        { align: "center" }
-      );
-    }
-  };
-
-  // ------------------ UTILITARIOS ------------------
-  const addTable = (titulo, data) => {
-    if (!data.length) return;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text(titulo, 40, y);
-    doc.setFont("helvetica", "normal");
-    autoTable(doc, {
-      startY: y + 10,
-      head: [Object.keys(data[0])],
-      body: data.map((d) => Object.values(d)),
-      styles: { fontSize: 8 },
-      theme: "striped",
-      margin: { left: 40, right: 40 },
-      didDrawPage: (data) => {
-        y = data.cursor.y;
-      },
-    });
-    y = doc.lastAutoTable.finalY + 25;
-  };
-
-  const completarColumnas = (datos, estados) =>
-    datos.map((d) => {
-      const fila = { ...d };
-      estados.forEach((e) => {
-        if (fila[e] === undefined) fila[e] = 0;
+    // ------------------ LOGO INSTITUCIONAL ------------------
+    try {
+      const logoUrl = "/asomunicipios_negro.png"; // usar PNG o JPG, no SVG
+      const imgBlob = await fetch(logoUrl).then((res) => res.blob());
+      const imgData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(imgBlob);
       });
+
+      // Mantener proporción del logo automáticamente
+      const tempImg = new Image();
+      tempImg.src = imgData;
+      await new Promise((resolve) => (tempImg.onload = resolve));
+
+      const originalWidth = tempImg.width;
+      const originalHeight = tempImg.height;
+      const logoHeight = 45; // ajusta si quieres más grande o pequeño
+      const logoWidth = (originalWidth / originalHeight) * logoHeight;
+
+      doc.addImage(imgData, "PNG", 40, 25, logoWidth, logoHeight);
+    } catch (err) {
+      console.warn("⚠️ No se pudo cargar el logo:", err);
+    }
+
+    // ------------------ ENCABEZADO ------------------
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Sistema de Trámites Catastrales", 140, 45);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(
+      "Asociación de Municipios del Catatumbo – Plataforma de gestión y seguimiento",
+      140,
+      62
+    );
+    doc.setFontSize(9);
+    doc.text(`Generado el ${new Date().toLocaleString("es-CO")}`, 140, 78);
+    doc.line(40, 90, 800, 90);
+
+    let y = 110;
+
+    // ------------------ PIE DE PÁGINA ------------------
+    const addPieDePagina = () => {
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(
+          `Página ${i} de ${pageCount} · Sistema de Trámites Catastrales - Asomunicipios`,
+          400,
+          580,
+          { align: "center" }
+        );
+      }
+    };
+
+    // ------------------ UTILITARIOS ------------------
+    const addTable = (titulo, data) => {
+      if (!data.length) return;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(titulo, 40, y);
+      doc.setFont("helvetica", "normal");
+      autoTable(doc, {
+        startY: y + 10,
+        head: [Object.keys(data[0])],
+        body: data.map((d) => Object.values(d)),
+        styles: { fontSize: 8 },
+        theme: "striped",
+        margin: { left: 40, right: 40 },
+        didDrawPage: (data) => {
+          y = data.cursor.y;
+        },
+      });
+      y = doc.lastAutoTable.finalY + 25;
+    };
+
+    const completarColumnas = (datos, estados) =>
+      datos.map((d) => {
+        const fila = { ...d };
+        estados.forEach((e) => {
+          if (fila[e] === undefined) fila[e] = 0;
+        });
+        return fila;
+      });
+
+    // ------------------ DATOS BASE ------------------
+    const estadosUnicos = [
+      ...new Set(tramitesFiltrados.map((t) => obtenerEstado(t))),
+    ];
+
+    // === 1️⃣ Trámites por Municipio (con totales)
+    const tramitesPorMunicipio = {};
+    tramitesFiltrados.forEach((t) => {
+      const muni = obtenerMunicipio(t);
+      if (!tramitesPorMunicipio[muni]) tramitesPorMunicipio[muni] = 0;
+      tramitesPorMunicipio[muni]++;
+    });
+
+    const dataMunicipio = Object.entries(tramitesPorMunicipio).map(
+      ([muni, total]) => ({
+        Municipio: muni,
+        Total: total,
+      })
+    );
+
+    addTable("Trámites por Municipio", dataMunicipio);
+
+    // === 2️⃣ Trámites por Municipio (por Estado) — sin totales
+    const municipiosPorEstado = {};
+    tramitesFiltrados.forEach((t) => {
+      const muni = obtenerMunicipio(t);
+      const est = obtenerEstado(t);
+      if (!municipiosPorEstado[muni]) municipiosPorEstado[muni] = {};
+      municipiosPorEstado[muni][est] =
+        (municipiosPorEstado[muni][est] || 0) + 1;
+    });
+
+    const dataMunicipioEstado = Object.entries(municipiosPorEstado).map(
+      ([muni, ests]) => ({
+        Municipio: muni,
+        ...ests,
+      })
+    );
+
+    addTable(
+      "Trámites por Municipio (por Estado)",
+      completarColumnas(dataMunicipioEstado, estadosUnicos)
+    );
+
+    // === 3️⃣ Trámites por Gestor (con totales)
+    const tramitesPorGestor = {};
+    tramitesFiltrados.forEach((t) => {
+      const g = obtenerGestor(t);
+      if (!tramitesPorGestor[g]) tramitesPorGestor[g] = 0;
+      tramitesPorGestor[g]++;
+    });
+
+    const dataGestor = Object.entries(tramitesPorGestor).map(([g, total]) => ({
+      Gestor: g,
+      Total: total,
+    }));
+
+    addTable("Trámites por Gestor", dataGestor);
+
+    // === 4️⃣ Trámites por Gestor (por Estado) — sin totales
+    const gestorPorEstado = {};
+    tramitesFiltrados.forEach((t) => {
+      const g = obtenerGestor(t);
+      const est = obtenerEstado(t);
+      if (!gestorPorEstado[g]) gestorPorEstado[g] = {};
+      gestorPorEstado[g][est] = (gestorPorEstado[g][est] || 0) + 1;
+    });
+
+    const dataGestorEstado = Object.entries(gestorPorEstado).map(
+      ([g, ests]) => ({
+        Gestor: g,
+        ...ests,
+      })
+    );
+
+    addTable(
+      "Trámites por Gestor (por Estado)",
+      completarColumnas(dataGestorEstado, estadosUnicos)
+    );
+
+    // === 5️⃣ Municipios vs Gestores — PDF (con auxiliar) ===
+
+    // 1. Gestores únicos
+    let gestoresUnicos = [
+      ...new Set([
+        ...tramitesFiltrados.map((t) =>
+          t.gestorAsignado ? t.gestorAsignado.nombre : "Sin gestor"
+        ),
+        ...tramitesFiltrados.map((t) =>
+          t.gestorAuxiliar ? t.gestorAuxiliar.nombre : null
+        ),
+      ]),
+    ].filter(Boolean);
+
+    if (!gestoresUnicos.includes("Sin gestor"))
+      gestoresUnicos.push("Sin gestor");
+
+    // 2. Municipios únicos
+    let municipiosUnicos = [
+      ...new Set(
+        tramitesFiltrados.map(
+          (t) => t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio"
+        )
+      ),
+    ];
+
+    // 3. Crear mapa Gestor → Municipio → principal/auxiliar
+    const gestorMunicipioMap = {};
+
+    gestoresUnicos.forEach((g) => {
+      gestorMunicipioMap[g] = {};
+      municipiosUnicos.forEach((m) => {
+        gestorMunicipioMap[g][m] = { principal: 0, auxiliar: 0 };
+      });
+    });
+
+    tramitesFiltrados.forEach((t) => {
+      const municipio = t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio";
+
+      // Principal
+      const gPrincipal = t.gestorAsignado
+        ? t.gestorAsignado.nombre
+        : "Sin gestor";
+
+      gestorMunicipioMap[gPrincipal][municipio].principal++;
+
+      // Auxiliar
+      if (t.gestorAuxiliar) {
+        const gAux = t.gestorAuxiliar.nombre;
+
+        if (!gestorMunicipioMap[gAux]) gestorMunicipioMap[gAux] = {};
+
+        if (!gestorMunicipioMap[gAux][municipio])
+          gestorMunicipioMap[gAux][municipio] = { principal: 0, auxiliar: 0 };
+
+        gestorMunicipioMap[gAux][municipio].auxiliar++;
+      }
+    });
+
+    // 4. Tabla final para PDF
+    const dataMuniGestor = gestoresUnicos.map((gestor) => {
+      const fila = { Gestor: gestor };
+
+      municipiosUnicos.forEach((m) => {
+        const { principal, auxiliar } = gestorMunicipioMap[gestor][m];
+
+        if (principal > 0 && auxiliar > 0)
+          fila[m] = `${principal} (${auxiliar})`;
+        else if (principal > 0) fila[m] = `${principal}`;
+        else if (auxiliar > 0) fila[m] = `(${auxiliar})`;
+        else fila[m] = "0";
+      });
+
       return fila;
     });
 
-  // ------------------ DATOS BASE ------------------
-  const estadosUnicos = [...new Set(tramitesFiltrados.map((t) => obtenerEstado(t)))];
+    // 5. PDF — con encabezados verticales
+    addTable("Gestores vs Municipios (principal y auxiliar)", dataMuniGestor, {
+      headStyles: {
+        textDirection: "vertical",
+        valign: "bottom",
+      },
+    });
 
-  // === 1️⃣ Trámites por Municipio (con totales)
-  const tramitesPorMunicipio = {};
-  tramitesFiltrados.forEach((t) => {
-    const muni = obtenerMunicipio(t);
-    if (!tramitesPorMunicipio[muni]) tramitesPorMunicipio[muni] = 0;
-    tramitesPorMunicipio[muni]++;
-  });
+    // 6. Nota final
+    addTable("Nota", [
+      {
+        Detalle:
+          "(GA) indica cantidad de trámites donde el gestor figura como Gestor Auxiliar.",
+      },
+    ]);
 
-  const dataMunicipio = Object.entries(tramitesPorMunicipio).map(([muni, total]) => ({
-    Municipio: muni,
-    Total: total,
-  }));
-
-  addTable("Trámites por Municipio", dataMunicipio);
-
-  // === 2️⃣ Trámites por Municipio (por Estado) — sin totales
-  const municipiosPorEstado = {};
-  tramitesFiltrados.forEach((t) => {
-    const muni = obtenerMunicipio(t);
-    const est = obtenerEstado(t);
-    if (!municipiosPorEstado[muni]) municipiosPorEstado[muni] = {};
-    municipiosPorEstado[muni][est] = (municipiosPorEstado[muni][est] || 0) + 1;
-  });
-
-  const dataMunicipioEstado = Object.entries(municipiosPorEstado).map(
-    ([muni, ests]) => ({
-      Municipio: muni,
-      ...ests,
-    })
-  );
-
-  addTable(
-    "Trámites por Municipio (por Estado)",
-    completarColumnas(dataMunicipioEstado, estadosUnicos)
-  );
-
-  // === 3️⃣ Trámites por Gestor (con totales)
-  const tramitesPorGestor = {};
-  tramitesFiltrados.forEach((t) => {
-    const g = obtenerGestor(t);
-    if (!tramitesPorGestor[g]) tramitesPorGestor[g] = 0;
-    tramitesPorGestor[g]++;
-  });
-
-  const dataGestor = Object.entries(tramitesPorGestor).map(([g, total]) => ({
-    Gestor: g,
-    Total: total,
-  }));
-
-  addTable("Trámites por Gestor", dataGestor);
-
-  // === 4️⃣ Trámites por Gestor (por Estado) — sin totales
-  const gestorPorEstado = {};
-  tramitesFiltrados.forEach((t) => {
-    const g = obtenerGestor(t);
-    const est = obtenerEstado(t);
-    if (!gestorPorEstado[g]) gestorPorEstado[g] = {};
-    gestorPorEstado[g][est] = (gestorPorEstado[g][est] || 0) + 1;
-  });
-
-  const dataGestorEstado = Object.entries(gestorPorEstado).map(([g, ests]) => ({
-    Gestor: g,
-    ...ests,
-  }));
-
-  addTable(
-    "Trámites por Gestor (por Estado)",
-    completarColumnas(dataGestorEstado, estadosUnicos)
-  );
-
- // === 5️⃣ Municipios vs Gestores — PDF (con auxiliar) ===
-
-// 1. Gestores únicos
-let gestoresUnicos = [
-  ...new Set([
-    ...tramitesFiltrados.map((t) =>
-      t.gestorAsignado ? t.gestorAsignado.nombre : "Sin gestor"
-    ),
-    ...tramitesFiltrados.map((t) =>
-      t.gestorAuxiliar ? t.gestorAuxiliar.nombre : null
-    ),
-  ]),
-].filter(Boolean);
-
-if (!gestoresUnicos.includes("Sin gestor"))
-  gestoresUnicos.push("Sin gestor");
-
-// 2. Municipios únicos
-let municipiosUnicos = [
-  ...new Set(
-    tramitesFiltrados.map((t) =>
-      t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio"
-    )
-  ),
-];
-
-// 3. Crear mapa Gestor → Municipio → principal/auxiliar
-const gestorMunicipioMap = {};
-
-gestoresUnicos.forEach((g) => {
-  gestorMunicipioMap[g] = {};
-  municipiosUnicos.forEach((m) => {
-    gestorMunicipioMap[g][m] = { principal: 0, auxiliar: 0 };
-  });
-});
-
-tramitesFiltrados.forEach((t) => {
-  const municipio =
-    t.inmuebles?.[0]?.municipio?.nombre || "Sin municipio";
-
-  // Principal
-  const gPrincipal = t.gestorAsignado
-    ? t.gestorAsignado.nombre
-    : "Sin gestor";
-
-  gestorMunicipioMap[gPrincipal][municipio].principal++;
-
-  // Auxiliar
-  if (t.gestorAuxiliar) {
-    const gAux = t.gestorAuxiliar.nombre;
-
-    if (!gestorMunicipioMap[gAux])
-      gestorMunicipioMap[gAux] = {};
-
-    if (!gestorMunicipioMap[gAux][municipio])
-      gestorMunicipioMap[gAux][municipio] = { principal: 0, auxiliar: 0 };
-
-    gestorMunicipioMap[gAux][municipio].auxiliar++;
-  }
-});
-
-// 4. Tabla final para PDF
-const dataMuniGestor = gestoresUnicos.map((gestor) => {
-  const fila = { Gestor: gestor };
-
-  municipiosUnicos.forEach((m) => {
-    const { principal, auxiliar } = gestorMunicipioMap[gestor][m];
-
-    if (principal > 0 && auxiliar > 0)
-      fila[m] = `${principal} (${auxiliar})`;
-
-    else if (principal > 0)
-      fila[m] = `${principal}`;
-
-    else if (auxiliar > 0)
-      fila[m] = `(${auxiliar})`;
-
-    else fila[m] = "0";
-  });
-
-  return fila;
-});
-
-// 5. PDF — con encabezados verticales
-addTable(
-  "Gestores vs Municipios (principal y auxiliar)",
-  dataMuniGestor,
-  {
-    headStyles: {
-      textDirection: "vertical",
-      valign: "bottom",
-    },
-  }
-);
-
-// 6. Nota final
-addTable("Nota", [
-  { Detalle: "(GA) indica cantidad de trámites donde el gestor figura como Gestor Auxiliar." },
-]);
-
-  // ------------------ PIE FINAL ------------------
-  addPieDePagina();
-  doc.save("Reporte_Tramites.pdf");
-};
-
-
+    // ------------------ PIE FINAL ------------------
+    addPieDePagina();
+    doc.save("Reporte_Tramites.pdf");
+  };
 
   // === Render ===
   return (
@@ -733,7 +736,11 @@ addTable("Nota", [
         ) : (
           <Tabs defaultValue="Por Municipio">
             {[
-              { titulo: "Por Municipio", data: dataMunicipio, color: "#3B82F6" },
+              {
+                titulo: "Por Municipio",
+                data: dataMunicipio,
+                color: "#3B82F6",
+              },
               { titulo: "Por Gestor", data: dataGestor, color: "#8B5CF6" },
               { titulo: "Por Estado", data: dataEstado, color: "#F59E0B" },
               { titulo: "Por Zona", data: dataZona, color: "#10B981" },
@@ -765,10 +772,16 @@ addTable("Nota", [
                       </LineChart>
                     ) : (
                       <BarChart data={data}>
-                        <XAxis dataKey="name" />
+                        <XAxis
+                          dataKey="name"
+                          interval={0}
+                          tick={{ fontSize: 11 }}
+                          angle={-20}
+                          textAnchor="end"
+                        />
                         <YAxis />
                         <Tooltip />
-                        <Legend />
+                        <Legend  />
                         <Bar dataKey="cantidad" fill={color} />
                       </BarChart>
                     )}

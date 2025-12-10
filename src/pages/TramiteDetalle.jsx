@@ -101,6 +101,22 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
     refrescarTramite();
   };
 
+const formatCamelCase = (text = "") => {
+  return text
+    .toLocaleLowerCase("es-ES")                   // Baja todo respetando acentos
+    .replace(/[^a-záéíóúüñ\s]/gi, "")              // Solo letras válidas y espacios
+    .replace(/\s{2,}/g, " ")                       // Espacios dobles
+    .trim()                                        // Bordes
+    .split(" ")                                    // Separar palabras
+    .map((word) =>
+      word.charAt(0).toLocaleUpperCase("es-ES") +  // Primera letra mayúscula
+      word.slice(1).toLocaleLowerCase("es-ES")     // Resto en minúscula SIEMPRE
+    )
+    .join(" ");                                     // Unir de nuevo
+};
+
+
+
   return (
     <>
       <motion.div
@@ -145,7 +161,7 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
               {tramiteLocal.tramiteRelacion?.solicitudTipo?.nombre || "-"}
             </p>
             <p>
-              <strong>Solicitante:</strong> {tramiteLocal.solicitante?.nombre}
+              <strong>Solicitante:</strong> {formatCamelCase(tramiteLocal.solicitante?.nombre)}
             </p>
             <p>
               <strong>Tipo Solicitante:</strong>{" "}
@@ -153,7 +169,7 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
             </p>
             <p>
               <strong>Gestor Asignado:</strong>{" "}
-              {tramiteLocal.gestorAsignado?.nombre || "Sin asignar"}
+              {formatCamelCase(tramiteLocal.gestorAsignado?.nombre || "Sin asignar")}
             </p>
             <p>
               <strong>Estado Actual:</strong> {tramiteLocal.estado}
@@ -268,8 +284,8 @@ export default function TramiteDetalle({ tramite, onClose, onActualizar }) {
                   <tbody className="text-sm text-gray-800">
                     {tramiteLocal.titulares.map((t) => (
                       <tr key={t.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 border">{t.nombre}</td>
-                        <td className="px-4 py-2 border">{t.apellido}</td>
+                        <td className="px-4 py-2 border">{formatCamelCase(t.nombre)}</td>
+                        <td className="px-4 py-2 border">{formatCamelCase(t.apellido)}</td>
                         <td className="px-4 py-2 border text-center">
                           {t.tipoDocumento}
                         </td>

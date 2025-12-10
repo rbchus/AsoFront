@@ -16,6 +16,7 @@ export default function TramiteLista() {
   const [filtroSolicitante, setFiltroSolicitante] = useState("");
   const [filtroMunicipio, setFiltroMunicipio] = useState("Todos");
   const [filtroGestor, setFiltroGestor] = useState("Todos");
+  const [filtroGestorAux, setFiltroGestorAux] = useState("Todos");
   const [filtroEstado, setFiltroEstado] = useState("Todos");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
@@ -25,11 +26,11 @@ export default function TramiteLista() {
   const [tramiteSeleccionado, setTramiteSeleccionado] = useState(null);
   const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
   const [cargando, setCargando] = useState(true);
- 
 
   // 🔹 Cargar datos
   const fetchData = async () => {
     const res = await getTramites();
+    console.log(res.data);
     setTramites(res.data || []);
     setCargando(false);
   };
@@ -56,6 +57,16 @@ export default function TramiteLista() {
       "Todos",
       ...new Set(
         tramites.map((t) => t.gestorAsignado?.nombre || "Sin asignar")
+      ),
+    ],
+    [tramites]
+  );
+
+   const gestoresAux = useMemo(
+    () => [
+      "Todos",
+      ...new Set(
+        tramites.map((t) => t.gestorAuxiliar?.nombre || " - ")
       ),
     ],
     [tramites]
@@ -95,6 +106,11 @@ export default function TramiteLista() {
         (t.gestorAsignado?.nombre || "Sin asignar") !== filtroGestor
       )
         return false;
+      if (
+        filtroGestorAux !== "Todos" &&
+        (t.gestorAuxiliar?.nombre || " - ") !== filtroGestorAux
+      )
+        return false;
       if (filtroEstado !== "Todos" && (t.estado || "-") !== filtroEstado)
         return false;
       return true;
@@ -105,6 +121,7 @@ export default function TramiteLista() {
     filtroSolicitante,
     filtroMunicipio,
     filtroGestor,
+    filtroGestorAux,
     filtroEstado,
     fechaInicio,
     fechaFin,
@@ -124,6 +141,21 @@ export default function TramiteLista() {
   };
 
   const actualizarTramite = () => fetchData();
+
+  const formatCamelCase = (text = "") => {
+    return text
+      .toLocaleLowerCase("es-ES") // Baja todo respetando acentos
+      .replace(/[^a-záéíóúüñ\s]/gi, "") // Solo letras válidas y espacios
+      .replace(/\s{2,}/g, " ") // Espacios dobles
+      .trim() // Bordes
+      .split(" ") // Separar palabras
+      .map(
+        (word) =>
+          word.charAt(0).toLocaleUpperCase("es-ES") + // Primera letra mayúscula
+          word.slice(1).toLocaleLowerCase("es-ES") // Resto en minúscula SIEMPRE
+      )
+      .join(" "); // Unir de nuevo
+  };
 
   return (
     <div className="p-6 w-full max-w-7xl mx-auto bg-white mt-10 rounded-2xl shadow-md relative">
@@ -198,6 +230,23 @@ export default function TramiteLista() {
             </select>
           </div>
 
+          {/* Gestor Auxiliar  */}
+          <div className="flex flex-col">
+            <label className="text-gray-600 mb-1 text-xs">Gestor Aux.</label>
+            <select
+              className="border px-2 py-1 rounded-lg text-xs"
+              value={filtroGestorAux}
+              onChange={(e) => {
+                setFiltroGestorAux(e.target.value);
+                setPaginaActual(1);
+              }}
+            >
+              {gestoresAux.map((g) => (
+                <option key={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Estado */}
           <div className="flex flex-col">
             <label className="text-gray-600 mb-1 text-xs">Estado</label>
@@ -214,38 +263,20 @@ export default function TramiteLista() {
               ))}
             </select>
           </div>
-
-          {/* Fechas */}
-          <div className="flex flex-col">
-            <label className="text-gray-600 mb-1 text-xs">Fecha Inicio</label>
-            <input
-              type="date"
-              className="border px-2 py-1 rounded-lg text-xs mb-1"
-              value={fechaInicio}
-              onChange={(e) => {
-                setFechaInicio(e.target.value);
-                setPaginaActual(1);
-              }}
-            />
-          </div>
         </div>
 
         <div className="grid grid-cols-6 gap-3 mb-4 text-sm w-full">
           {/* Cabecera: ocupa 5 columnas */}
-          <div className="col-span-5 flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
-           
-           
-
- <div className="col-span-1 flex flex-col">
-                <button
-                  onClick={reloadPage}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm"
-                >
-                  <RotateCw className="w-5 h-5" />
-                  Recargar
-                </button>
-              </div>
-
+          <div className="col-span-4 flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+            <div className="col-span-1 flex flex-col">
+              <button
+                onClick={reloadPage}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm"
+              >
+                <RotateCw className="w-5 h-5" />
+                Recargar
+              </button>
+            </div>
 
             {/* Botón estadísticas a la izquierda */}
             {usuario?.rol !== "CIUDADANO" && (
@@ -264,6 +295,20 @@ export default function TramiteLista() {
             <h2 className="text-2xl font-bold text-gray-800 flex-1 text-center">
               Listado de Trámites
             </h2>
+          </div>
+
+          {/* Fechas */}
+          <div className="col-span-1 flex flex-col">
+            <label className="text-gray-600 mb-1 text-xs">Fecha Inicio</label>
+            <input
+              type="date"
+              className="border px-2 py-1 rounded-lg text-xs mb-1"
+              value={fechaInicio}
+              onChange={(e) => {
+                setFechaInicio(e.target.value);
+                setPaginaActual(1);
+              }}
+            />
           </div>
 
           {/* Fecha fin: ocupa 1 columna */}
@@ -292,6 +337,7 @@ export default function TramiteLista() {
               <th className="border px-3 py-2 text-left">Tipo Solicitud</th>
               <th className="border px-3 py-2 text-left">Solicitante</th>
               <th className="border px-3 py-2 text-left">Gestor</th>
+              <th className="border px-3 py-2 text-left">Gestor Aux.</th>
               <th className="border px-3 py-2 text-left">Estado</th>
               <th className="border px-3 py-2 text-left">Municipio</th>
               <th className="border px-3 py-2 text-left">Fecha</th>
@@ -313,9 +359,14 @@ export default function TramiteLista() {
                 <td className="border px-3 py-2">
                   {t.tramiteRelacion?.solicitudTipo?.nombre || "-"}
                 </td>
-                <td className="border px-3 py-2">{t.solicitante?.nombre}</td>
                 <td className="border px-3 py-2">
-                  {t.gestorAsignado?.nombre || "Sin asignar"}
+                  {formatCamelCase(t.solicitante?.nombre)}
+                </td>
+                <td className="border px-3 py-2">
+                  {formatCamelCase(t.gestorAsignado?.nombre || "Sin asignar")}
+                </td>
+                <td className="border px-3 py-2">
+                  {formatCamelCase(t.gestorAuxiliar?.nombre || " - ")}
                 </td>
                 <td className="border px-3 py-2">{t.estado}</td>
                 <td className="border px-3 py-2">{obtenerMunicipio(t)}</td>
