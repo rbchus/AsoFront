@@ -7,9 +7,6 @@ import { Eye, BarChart3, RotateCw } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import LoadingOverlay from "../components/LoadingOverlay";
 
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-
 export default function TramiteLista() {
   const { usuario } = useAuth();
   const [tramites, setTramites] = useState([]);
@@ -65,10 +62,12 @@ export default function TramiteLista() {
     [tramites]
   );
 
-  const gestoresAux = useMemo(
+   const gestoresAux = useMemo(
     () => [
       "Todos",
-      ...new Set(tramites.map((t) => t.gestorAuxiliar?.nombre || " - ")),
+      ...new Set(
+        tramites.map((t) => t.gestorAuxiliar?.nombre || " - ")
+      ),
     ],
     [tramites]
   );
@@ -158,122 +157,6 @@ export default function TramiteLista() {
       .join(" "); // Unir de nuevo
   };
 
-  //-----------  PDF -------------
-
-  const obtenerFiltrosAplicados = () => {
-    const filtros = [];
-
-    if (filtroId) filtros.push(`ID: ${filtroId}`);
-    if (filtroSolicitante) filtros.push(`Solicitante: ${filtroSolicitante}`);
-    if (filtroMunicipio !== "Todos")
-      filtros.push(`Municipio: ${filtroMunicipio}`);
-    if (filtroGestor !== "Todos") filtros.push(`Gestor: ${filtroGestor}`);
-    if (filtroGestorAux !== "Todos")
-      filtros.push(`Gestor Aux.: ${filtroGestorAux}`);
-    if (filtroEstado !== "Todos") filtros.push(`Estado: ${filtroEstado}`);
-    if (fechaInicio)
-      filtros.push(
-        `Desde: ${new Date(fechaInicio).toLocaleDateString("es-CO")}`
-      );
-    if (fechaFin)
-      filtros.push(`Hasta: ${new Date(fechaFin).toLocaleDateString("es-CO")}`);
-
-    return filtros.length ? filtros.join("  |  ") : "Sin filtros aplicados";
-  };
-
-  const generarPDF = () => {
-    const doc = new jsPDF("landscape", "pt", "A4");
-
-    // ------------------ ENCABEZADO ------------------
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("Sistema de Trámites Catastrales", 40, 45);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text(
-      "Asociación de Municipios del Catatumbo – Plataforma de gestión y seguimiento",
-      40,
-      62
-    );
-
-    doc.setFontSize(9);
-    doc.text(`Generado el ${new Date().toLocaleString("es-CO")}`, 40, 78);
-
-    // ------------------ FILTROS ------------------
-    doc.setFont("helvetica", "bold");
-    doc.text("Filtros aplicados:", 40, 95);
-
-    doc.setFont("helvetica", "normal");
-    const filtrosTexto = obtenerFiltrosAplicados();
-
-    doc.text(filtrosTexto, 40, 110, {
-      maxWidth: 720,
-    });
-
-    doc.line(40, 130, 800, 130);
-
-    // ------------------ TABLA ------------------
-    const columnas = [
-      "ID",
-      "Tipo Trámite",
-      "Tipo Solicitud",
-      "Solicitante",
-      "Gestor",
-      "Gestor Aux.",
-      "Estado",
-      "Municipio",
-      "Fecha",
-    ];
-
-    const filas = tramitesFiltrados.map((t) => [
-      t.id,
-      t.tramiteRelacion?.tramiteTipo?.nombre || "-",
-      t.tramiteRelacion?.solicitudTipo?.nombre || "-",
-      formatCamelCase(t.solicitante?.nombre || "-"),
-      formatCamelCase(t.gestorAsignado?.nombre || "Sin asignar"),
-      formatCamelCase(t.gestorAuxiliar?.nombre || " - "),
-      t.estado || "-",
-      obtenerMunicipio(t),
-      new Date(t.fechaActualizacion).toLocaleDateString("es-CO"),
-    ]);
-
-    autoTable(doc, {
-      startY: 150,
-      head: [columnas],
-      body: filas,
-      styles: {
-        fontSize: 8,
-        cellPadding: 4,
-      },
-      headStyles: {
-        fillColor: [219, 234, 254],
-        textColor: [0, 0, 0],
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: [245, 250, 255],
-      },
-      margin: { left: 40, right: 40 },
-    });
-
-    // ------------------ PIE DE PÁGINA ------------------
-    const totalPaginas = doc.internal.getNumberOfPages();
-
-    for (let i = 1; i <= totalPaginas; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.text(
-        `Página ${i} de ${totalPaginas}`,
-        doc.internal.pageSize.getWidth() - 80,
-        doc.internal.pageSize.getHeight() - 20
-      );
-    }
-
-    doc.save("listado_tramites.pdf");
-  };
-
-  //-----------  PDF -------------
   return (
     <div className="p-6 w-full max-w-7xl mx-auto bg-white mt-10 rounded-2xl shadow-md relative">
       {cargando && (
@@ -404,18 +287,6 @@ export default function TramiteLista() {
                 >
                   <BarChart3 className="w-5 h-5" />
                   Ver estadísticas
-                </button>
-              </div>
-            )}
-
-            {/* Botón estadísticas a la izquierda */}
-            {usuario?.rol !== "CIUDADANO" && (
-              <div className="col-span-1 flex flex-col">
-                <button
-                  onClick={generarPDF}
-                  className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"
-                >
-                  📄 Exportar PDF
                 </button>
               </div>
             )}

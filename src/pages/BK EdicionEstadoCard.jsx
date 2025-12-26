@@ -24,9 +24,6 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [buscarGestor, setBuscarGestor] = useState("");
-  const [buscarGestorAux, setBuscarGestorAux] = useState("");
-
   // 🔹 Estados válidos
   const estadosBase = [
     "RADICADO",
@@ -164,12 +161,6 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
     }
   };
 
-  const filtrarGestores = (texto) => {
-    return gestores.filter((g) =>
-      g.nombre.toLowerCase().includes(texto.toLowerCase())
-    );
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -222,62 +213,42 @@ export default function EdicionEstadoCard({ tramite, onClose, onUpdated }) {
               </div>
             )}
 
-            {/* Gestor Asignado */}
+            {/* Gestor */}
             {!esCiudadano && (
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Gestor Asignado
                 </label>
-
-                <input
-                  type="text"
-                  placeholder="Buscar gestor..."
-                  value={buscarGestor}
-                  onChange={(e) => setBuscarGestor(e.target.value)}
-                  className="w-full border rounded-lg p-2 mb-2"
-                />
-
                 <select
                   value={nuevoGestor}
                   onChange={(e) => setNuevoGestor(e.target.value)}
                   className="w-full border rounded-lg p-2"
                 >
                   <option value="">Seleccionar Gestor</option>
-
-                  {filtrarGestores(buscarGestor).map((g) => (
+                  {gestores.map((g) => (
                     <option key={g.id_usuario} value={g.id_usuario}>
-                      {g.rol} {g.nombre}
+                      {g.rol} {g.nombre} 
                     </option>
                   ))}
                 </select>
               </div>
             )}
 
-            {/* Gestor Auxiliar */}
+              {/* Gestor */}
             {!esCiudadano && (
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Gestor Auxiliar
                 </label>
-
-                <input
-                  type="text"
-                  placeholder="Buscar gestor..."
-                  value={buscarGestorAux}
-                  onChange={(e) => setBuscarGestorAux(e.target.value)}
-                  className="w-full border rounded-lg p-2 mb-2"
-                />
-
                 <select
                   value={nuevoGestorAuxiliar}
                   onChange={(e) => setNuevoGestorAuxiliar(e.target.value)}
                   className="w-full border rounded-lg p-2"
                 >
                   <option value={0}>Seleccionar Gestor</option>
-
-                  {filtrarGestores(buscarGestorAux).map((g) => (
+                  {gestores.map((g) => (
                     <option key={g.id_usuario} value={g.id_usuario}>
-                      {g.rol} {g.nombre}
+                      {g.rol} {g.nombre} 
                     </option>
                   ))}
                 </select>
